@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CVE List</title>
+</head>
+<body>
+    <h1>CVE List</h1>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>CVE ID</th>
+                <th>Description</th>
+                <th>Published Date </th>
+                <th>Modified Date </th>
+                <th>References </th>
+                <th>Version </th>
+                <th>Vector String</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in cve_entries %}
+            <tr>
+                <td>{{ entry.cve_id }}</td>
+                <td>{{ entry.description }}</td>
+                <td>{{ entry.published_date }}</td>
+                <td>{{ entry.modified_date }}</td>
+                <td>{{ entry.references }}</td>
+                <td>{{ entry.version }}</td>
+                <td>{{ entry.vector_string }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

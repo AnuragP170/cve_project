@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CVE List</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <style>
+        .table-container {
+            overflow-x: auto;
+           
+        }
+          .description-column {
+            width: 200px; /* Adjust this width as needed */
+        }
+        .published-date-column,
+        .modified-date-column {
+            width: 150px; /* Adjust this width to match your needs */
+        }
+        .references-column {
+            width: 150px; /* Adjust this width as needed */
+        }
+        .table-top-scroll {
+            overflow-x: auto;
+            overflow-y: hidden;
+            margin-bottom: -20px; /* Adjust to make space for the main table */
+        }
+        .table-top-scroll table {
+            visibility: hidden; /* Hide the table but keep its structure */
+        }
+    </style>
+    <script>
+        $(document).ready(function() {
+            $('.table-top-scroll').on('scroll', function() {
+                $('.table-container').scrollLeft($(this).scrollLeft());
+            });
+            $('.table-container').on('scroll', function() {
+                $('.table-top-scroll').scrollLeft($(this).scrollLeft());
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">CVE List</h1>
+        <div class="table-top-scroll">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>CVE ID</th>
+                        <th>Description</th>
+                        <th>Published Date</th>
+                        <th>Modified Date</th>
+                        <th>References</th>
+                        <th>Version</th>
+                        <th class="vector-string-column">Vector String</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+        <div class="table-container">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>CVE ID</th>
+                        <th>Description</th>
+                        <th>Published Date</th>
+                        <th>Modified Date</th>
+                        <th>References</th>
+                        <th>Version</th>
+                        <th class="vector-string-column">Vector String</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in page_obj %}
+                    <tr>
+                        <td>{{ entry.cve_id }}</td>
+                        <td>{{ entry.description }}</td>
+                        <td>{{ entry.published_date }}</td>
+                        <td>{{ entry.modified_date }}</td>
+                        <td>{{ entry.references }}</td>
+                        <td>{{ entry.version }}</td>
+                        <td>{{ entry.vector_string }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <nav aria-label="Page navigation example">
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1" aria-label="First">
+                        <span aria-hidden="true">&laquo;&laquo;</span>
+                        <span class="sr-only">First</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                        <span class="sr-only">Previous</span>
+                    </a>
+                </li>
+                {% endif %}
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+                {% endfor %}
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                        <span class="sr-only">Next</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
+                        <span aria-hidden="true">&raquo;&raquo;</span>
+                        <span class="sr-only">Last</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</body>
+</html>
