@@ -20,3 +20,6 @@ INSTALLATION OF PRE-REQUISITES
 1. pip install openpyxl django-import-export
 2. pip install django-redis
 3. enter command: redis-server 
+
+
+reverse_excel_rows.py -> this script can be used to sort the CVEs in descending order (latest entries displayed first)
