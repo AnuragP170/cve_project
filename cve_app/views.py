@@ -4,8 +4,9 @@ import openpyxl
 from django.core.paginator import Paginator
 
 def load_cve_data(request):
-    cve_entries = cache.get('cve_entries')
+    query = request.GET.get('q')  # Get the search query from request
 
+    cve_entries = cache.get('cve_entries')
     if not cve_entries:
         # Load data from Excel file
         wb = openpyxl.load_workbook('extracted_cve_details.xlsx')
@@ -23,11 +24,17 @@ def load_cve_data(request):
                 'vector_string': row[6]
             }
             cve_entries.append(cve_entry)
-
+        
         cache.set('cve_entries', cve_entries, timeout=60*15)  # Cache for 15 minutes
+    
+    # Filter entries based on search query if it exists
+    if query:
+        filtered_entries = [entry for entry in cve_entries if query.lower() in entry['cve_id'].lower()]
+    else:
+        filtered_entries = cve_entries
 
-    # Paginate the entries
-    paginator = Paginator(cve_entries, 50)  # Show 50 entries per page
+    # Paginate the filtered entries
+    paginator = Paginator(filtered_entries, 50)  # Show 50 entries per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
