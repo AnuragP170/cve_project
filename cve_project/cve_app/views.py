@@ -258,4 +258,49 @@ def check_programs_view(request):
     print(status)
     return render(request, 'cve_app/status.html', {'status': status})
 
+def load_ransomware_data(request):
+    query = request.GET.get('q')  # Get the search query from request
+    ransomware_entries = cache.get('ransomware_entries')
+    if not ransomware_entries:
+        # Load data from Excel file
+
+        wb = openpyxl.load_workbook("ransomware_merged.xlsx")
+        sheet = wb.active
+        
+        ransomware_entries = []
+        for row in sheet.iter_rows(min_row=9, values_only=True):
+            if row[0] is None:  # Skip rows where cve_id is None
+                continue
+            ransomware_entry = {
+                'cve_id': row[0],
+                'description': row[1] if row[1] else "",
+                'mitigation': row[2] if row[2] else "",
+                'ransomware': row[3] if row[3] else "",
+                'school': row[4] if row[4] else "",
+                'CISA': row[5] if row[5] else "",
+                'NVD': row[6] if row[6] else "",
+                'references': row[7] if row[7] else "",
+                'ransomware_url': row[8] if row[8] else ""
+            }
+            ransomware_entries.append(ransomware_entry)
+        
+        cache.set('ransomware_entries', ransomware_entries, timeout=60*15)  # Cache for 15 minutes
+
+    # Further filter entries based on search query if it exists
+    if query:
+        query_parts = query.lower().split()
+        ransomware_entries = [
+            entry for entry in ransomware_entries 
+            if all(
+                any(part in (str(value).lower() or '') for value in entry.values())
+                for part in query_parts
+            )
+        ]
+
+    # # Paginate the filtered entries
+    paginator = Paginator(ransomware_entries, 50)  # Show 50 entries per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    return render(request, 'cve_app/ransomware.html', {'page_obj': page_obj})
+
 

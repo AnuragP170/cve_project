@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>CVE List</title>
+    <title>Ransomware CVE List</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
@@ -75,16 +75,9 @@
                     <tr>
                         <th>CVE ID</th>
                         <th>Description</th>
-                        <th>Published Date</th>
-                        <th>Modified Date</th>
-                        <th>Affected Platform</th>
-                        <th>CVSS Version</th>
-                        <th class="vector-string-column">CVSS Vector String</th>
-                        <th>Base score</th>
-                        <th>Base severity</th>
-                        <th>References</th>
-                        <th>CWE</th>
-                        <th>Assigner</th>
+                        <th>Mitigation</th>
+                        <th>Ransomware </th>
+                        <th>References </th>
                     </tr>
                 </thead>
             </table>
@@ -95,33 +88,19 @@
                     <tr>
                         <th>CVE ID</th>
                         <th>Description</th>
-                        <th>Published Date</th>
-                        <th>Modified Date</th>
-                        <th>Affected Platform</th>
-                        <th>CVSS Version</th>
-                        <th class="vector-string-column">CVSS Vector String</th>
-                        <th>Base score</th>
-                        <th>Base severity</th>
-                        <th>References</th>
-                        <th>CWE</th>
-                        <th>Assigner</th>
+                        <th>Mitigation</th>
+                        <th>Ransomware </th>
+                        <th>References </th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for entry in page_obj %}
+                    {% for ransomware in page_obj %}
                     <tr>
-                        <td>{{ entry.cve_id }}</td>
-                        <td>{{ entry.description }}</td>
-                        <td>{{ entry.published_date }}</td>
-                        <td>{{ entry.modified_date }}</td>
-                        <td>{{ entry.affected_platform }}</td>
-                        <td>{{ entry.version }}</td>
-                        <td>{{ entry.vector_string }}</td>
-                        <td>{{ entry.base_score }}</td>
-                        <td>{{ entry.base_severity }}</td>
-                        <td>{{ entry.references }}</td>
-                        <td>{{ entry.cwe }}</td>
-                        <td>{{ entry.assigner }}</td>
+                        <td>{{ ransomware.cve_id }}</td>
+                        <td>{{ ransomware.description }}</td>
+                        <td>{{ ransomware.mitigation }}</td>
+                        <td>{{ ransomware.ransomware }}</td>
+                        <td>{{ ransomware.ransomware_url }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -169,3 +148,4 @@
     </div>
 </body>
 </html>
+
