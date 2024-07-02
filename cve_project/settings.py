@@ -117,7 +117,7 @@ USE_TZ = True
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/1',  # Update this with your Redis server location
+        'LOCATION': 'redis://192.168.56.103:6379/1',  # Update this with your Redis server location
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
         }
