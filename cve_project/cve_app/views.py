@@ -16,7 +16,7 @@ FILENAME = 'merged_done.xlsx'
 
 def load_cve_data(request):
     query = request.GET.get('q')  # Get the search query from request
-    filter_cisa = 'filter_cisa' in request.GET  # Check if the filter button is pressed
+    filter_ransomware = 'filter_ransomware' in request.GET  # Check if the filter button is pressed
     cve_entries = cache.get('cve_entries')
     if not cve_entries:
         # Load data from Excel file
@@ -48,12 +48,16 @@ def load_cve_data(request):
 
     cve_entries.reverse()
     # Filter entries based on search query if it exists
-    if filter_cisa:
+    if filter_ransomware:
         # Filter CVEs based on the contents of cves_from_cisa.txt
         try:
-            with open('cves_from_cisa.txt', 'r') as file:
-                cisa_cves = set(line.strip() for line in file)
-            filtered_entries = [entry for entry in cve_entries if entry['cve_id'] in cisa_cves]
+            # with open('cves_from_cisa.txt', 'r') as file:
+            #     cisa_cves = set(line.strip() for line in file)
+            # filtered_entries = [entry for entry in cve_entries if entry['cve_id'] in cisa_cves]
+            ransomware_wb = openpyxl.load_workbook('ransomware_merged.xlsx')
+            ransomware_sheet = ransomware_wb.active
+            ransomware_cves = set(cell.value for cell in ransomware_sheet['A'] if cell.value)
+            filtered_entries = [entry for entry in cve_entries if entry['cve_id'] in ransomware_cves]
         except FileNotFoundError:
             filtered_entries = cve_entries  # If the file is not found, do not filter
     else:
