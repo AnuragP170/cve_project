@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CVE List</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <style>
+        .table-container {
+            overflow-x: auto;
+           
+        }
+          .description-column {
+            width: 200px; /* Adjust this width as needed */
+        }
+        .published-date-column,
+        .modified-date-column {
+            width: 150px; /* Adjust this width to match your needs */
+        }
+        .references-column {
+            width: 150px; /* Adjust this width as needed */
+        }
+        .table-top-scroll {
+            overflow-x: auto;
+            overflow-y: hidden;
+            margin-bottom: -20px; /* Adjust to make space for the main table */
+        }
+        .table-top-scroll table {
+            visibility: hidden; /* Hide the table but keep its structure */
+        }
+    </style>
+    <script>
+        $(document).ready(function() {
+            $('.table-top-scroll').on('scroll', function() {
+                $('.table-container').scrollLeft($(this).scrollLeft());
+            });
+            $('.table-container').on('scroll', function() {
+                $('.table-top-scroll').scrollLeft($(this).scrollLeft());
+            });
+        });
+    </script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <a class="navbar-brand" href="../cve-list/">CVE List</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="update/">Update</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="../checklist/">Checklist</a>
+                </li>
+            </ul>
+            <!-- Search Form -->
+            <form class="form-inline my-2 my-lg-0 ml-auto" method="GET" action="">
+                <input class="form-control mr-sm-2" type="search" name="q" placeholder="Search by CVE ID" value="{{ request.GET.q }}" aria-label="Search">
+                <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+                <button class="btn btn-outline-primary my-2 my-sm-0 ml-2" name="filter_cisa" type="submit">Filter for Ransomware</button>
+            </form>
+        </div>
+    </nav>
+    
+    <div class="container mt-5">
+        <div class="table-top-scroll">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>CVE ID</th>
+                        <th>Description</th>
+                        <th>Published Date</th>
+                        <th>Modified Date</th>
+                        <th>Affected Platform</th>
+                        <th>CVSS Version</th>
+                        <th class="vector-string-column">CVSS Vector String</th>
+                        <th>Base score</th>
+                        <th>Base severity</th>
+                        <th>References</th>
+                        <th>CWE</th>
+                        <th>Assigner</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+        <div class="table-container">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>CVE ID</th>
+                        <th>Description</th>
+                        <th>Published Date</th>
+                        <th>Modified Date</th>
+                        <th>Affected Platform</th>
+                        <th>CVSS Version</th>
+                        <th class="vector-string-column">CVSS Vector String</th>
+                        <th>Base score</th>
+                        <th>Base severity</th>
+                        <th>References</th>
+                        <th>CWE</th>
+                        <th>Assigner</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in page_obj %}
+                    <tr>
+                        <td>{{ entry.cve_id }}</td>
+                        <td>{{ entry.description }}</td>
+                        <td>{{ entry.published_date }}</td>
+                        <td>{{ entry.modified_date }}</td>
+                        <td>{{ entry.affected_platform }}</td>
+                        <td>{{ entry.version }}</td>
+                        <td>{{ entry.vector_string }}</td>
+                        <td>{{ entry.base_score }}</td>
+                        <td>{{ entry.base_severity }}</td>
+                        <td>{{ entry.references }}</td>
+                        <td>{{ entry.cwe }}</td>
+                        <td>{{ entry.assigner }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <nav aria-label="Page navigation example">
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1" aria-label="First">
+                        <span aria-hidden="true">&laquo;&laquo;</span>
+                        <span class="sr-only">First</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                        <span class="sr-only">Previous</span>
+                    </a>
+                </li>
+                {% endif %}
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+                {% endfor %}
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                        <span class="sr-only">Next</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
+                        <span aria-hidden="true">&raquo;&raquo;</span>
+                        <span class="sr-only">Last</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</body>
+</html>
