@@ -1,7 +1,7 @@
 # cve_project
 This web app renders cve entries from excel file directly into web app.
 
-the current excel file being displayed - extracted_cve_details.xlsx
+the current excel file being displayed - all_cve_data.xlsx
 
 to run server
 use command - python3 manage.py runserver
@@ -21,5 +21,4 @@ INSTALLATION OF PRE-REQUISITES
 2. pip install django-redis
 3. enter command: redis-server 
 
-
-reverse_excel_rows.py -> this script can be used to sort the CVEs in descending order (latest entries displayed first)
+and other libraries in requirements.txt
