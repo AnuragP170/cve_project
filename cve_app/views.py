@@ -12,7 +12,7 @@ import subprocess
 import cve_app.security_detection
 
 API_KEY = '54ede83a-15f3-4b24-93b0-e6251f3bc2f2'
-FILENAME = 'all_cve_data_2.xlsx'
+FILENAME = 'processed_cve_data.xlsx'
 RANSOMWARE_CVE_FILE = 'ransomware_merged.xlsx'
 
 def load_cve_data(request):
@@ -162,6 +162,7 @@ def process_vulnerability(vulnerability):
         assigner = 'N/A'
 
     base_severity = setBaseSeverity(base_score, base_severity)
+    print("set base severity :", base_severity)
 
     return [cve_id, description, published_date, last_modified_date, affected_platform, version, vector_string, base_score, base_severity, references_str, cwe, assigner]
 
