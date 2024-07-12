@@ -72,24 +72,32 @@ import pandas as pd
 from sqlalchemy import create_engine
 import logging
 import pymysql
+import urllib.parse
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Database configuration
-db_user = 'admin2'
-db_password = 'admin123'
-db_host = 'localhost'
-db_port = '3306'
-db_name = 'cve_database'
-db_table = 'entire_cve_list'
+# db_user = 'admin2'
+# db_password = 'admin123'
+# db_host = 'localhost'
+# db_port = '3306'
+# db_name = 'cve_database'
+# db_table = 'entire_cve_list'
 
+db_user = 'team27'
+db_password = 'T3@m27!'
+db_host = '54.79.198.148'
+db_port = '3306'
+db_name = 'Mitigation'
+db_table = 'entire_cve_list'
+db_password_encoded = urllib.parse.quote_plus(db_password)
 # Path to your Excel file
 excel_file_path = 'processed_cve_data.xlsx'
 
 try:
     # Create a connection to the database
-    engine = create_engine(f'mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}')
+    engine = create_engine(f'mysql+pymysql://{db_user}:{db_password_encoded}@{db_host}:{db_port}/{db_name}')
     logging.info("Database connection established.")
 
     # Read the Excel file
@@ -98,22 +106,22 @@ try:
 
     # Rename DataFrame columns to match the database table columns
     df.rename(columns={
-        'CVE ID': 'cve_id',
-        'Description': 'description',
-        'Published Date': 'published_date',
-        'Last Modified Date': 'last_modified_date',
-        'Affected Platform': 'affected_platform',
-        'CVSS Version': 'cvss_version',
-        'Base Score': 'base_score',
-        'Base Severity': 'base_severity',
-        'References': 'references_list',
-        'CWE': 'cwe',
+        'CVE ID': 'CVE_ID',
+        'Description': 'Description',
+        'Published Date': 'Published_Date',
+        'Last Modified Date': 'Last_Modified_Date',
+        'Affected Platform': 'Affected_Platform',
+        'CVSS Version': 'CVSS_Version',
+        'Base Score': 'Base_Score',
+        'Base Severity': 'Base_Severity',
+        'References': 'References',
+        'CWE': 'CWE',
         'assigner': 'assigner'
     }, inplace=True)
 
     # Ensure date columns are in datetime format
-    df['published_date'] = pd.to_datetime(df['published_date'], errors='coerce')
-    df['last_modified_date'] = pd.to_datetime(df['last_modified_date'], errors='coerce')
+    df['Published_Date'] = pd.to_datetime(df['Published_Date'], errors='coerce')
+    df['Last_Modified_Date'] = pd.to_datetime(df['Last_Modified_Date'], errors='coerce')
 
     # Insert data into the database
     df.to_sql(db_table, con=engine, if_exists='append', index=False)
