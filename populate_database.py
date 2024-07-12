@@ -86,8 +86,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # db_table = 'entire_cve_list'
 
 db_user = 'team27'
-db_password = 'T3@m27!'
-db_host = '54.79.198.148'
+db_password = 'redacted'
+db_host = 'redacted'
 db_port = '3306'
 db_name = 'Mitigation'
 db_table = 'entire_cve_list'
