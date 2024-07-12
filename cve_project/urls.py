@@ -15,10 +15,14 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
+from django.shortcuts import redirect
 from cve_app import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('cve-list/', views.load_cve_data, name='cve_list')
+    path('cve-list/', include('cve_app.urls')),
+    path('', lambda request: redirect('cve-list/', permanent=True)),
+    path('run_cisa_script/', views.run_cisa_script, name='run_cisa_script'),
+    path('checklist/', views.check_programs_view, name='checklist')
 ]

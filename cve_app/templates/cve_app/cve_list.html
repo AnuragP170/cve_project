@@ -50,7 +50,7 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav">
                 <li class="nav-item">
-                    <a class="nav-link" href="update.html">Update</a>
+                    <a class="nav-link" href="update/">Update</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="more.html">More</a>
@@ -60,6 +60,7 @@
             <form class="form-inline my-2 my-lg-0 ml-auto" method="GET" action="">
                 <input class="form-control mr-sm-2" type="search" name="q" placeholder="Search by CVE ID" value="{{ request.GET.q }}" aria-label="Search">
                 <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+                <button class="btn btn-outline-primary my-2 my-sm-0 ml-2" name="filter_cisa" type="submit">Filter for Ransomware</button>
             </form>
         </div>
     </nav>
@@ -73,9 +74,14 @@
                         <th>Description</th>
                         <th>Published Date</th>
                         <th>Modified Date</th>
+                        <th>Affected Platform</th>
+                        <th>CVSS Version</th>
+                        <th class="vector-string-column">CVSS Vector String</th>
+                        <th>Base score</th>
+                        <th>Base severity</th>
                         <th>References</th>
-                        <th>Version</th>
-                        <th class="vector-string-column">Vector String</th>
+                        <th>CWE</th>
+                        <th>Assigner</th>
                     </tr>
                 </thead>
             </table>
@@ -88,9 +94,14 @@
                         <th>Description</th>
                         <th>Published Date</th>
                         <th>Modified Date</th>
+                        <th>Affected Platform</th>
+                        <th>CVSS Version</th>
+                        <th class="vector-string-column">CVSS Vector String</th>
+                        <th>Base score</th>
+                        <th>Base severity</th>
                         <th>References</th>
-                        <th>Version</th>
-                        <th class="vector-string-column">Vector String</th>
+                        <th>CWE</th>
+                        <th>Assigner</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -100,9 +111,14 @@
                         <td>{{ entry.description }}</td>
                         <td>{{ entry.published_date }}</td>
                         <td>{{ entry.modified_date }}</td>
-                        <td>{{ entry.references }}</td>
+                        <td>{{ entry.affected_platform }}</td>
                         <td>{{ entry.version }}</td>
                         <td>{{ entry.vector_string }}</td>
+                        <td>{{ entry.base_score }}</td>
+                        <td>{{ entry.base_severity }}</td>
+                        <td>{{ entry.references }}</td>
+                        <td>{{ entry.cwe }}</td>
+                        <td>{{ entry.assigner }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

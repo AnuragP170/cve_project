@@ -28,7 +28,7 @@ def reverse_excel_rows(input_file, output_file):
 
 # Specify the input and output file names
 input_file = 'extracted_cve_details.xlsx'  # Change this to your input file
-output_file = 'extracted_cve_details_2.xlsx'  # Change this to your desired output file
+output_file = 'extracted_cve_details_normal_order.xlsx'  # Change this to your desired output file
 
 # Reverse the rows and save to a new file
 reverse_excel_rows(input_file, output_file)
