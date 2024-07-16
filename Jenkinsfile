@@ -1,8 +1,6 @@
 pipeline {
      agent {
-        docker {
-            image 'python:3.8' // Use the appropriate Python version
-        }
+          any
     }
 
     stages {
@@ -18,6 +16,7 @@ pipeline {
                 script {
                     // Install dependencies
                     sh '''
+                    npm install python3 python3-venv
                     . venv/bin/activate
                     pip install -r requirements.txt
                     npm install redis-server
