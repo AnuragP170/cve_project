@@ -1,5 +1,9 @@
 pipeline {
-    agent any
+     agent {
+        docker {
+            image 'python:3.8' // Use the appropriate Python version
+        }
+    }
 
     stages {
         stage('Checkout') {
@@ -8,15 +12,19 @@ pipeline {
             }
         }
 
-        stage('Setup Python') {
+        
+        stage('Install Dependencies') {
             steps {
                 script {
-                    // Install Python and virtualenv
-                    sh 'sudo apt-get update'
-                    sh 'sudo apt-get install -y python3 python3-venv'
+                    // Install dependencies
+                    sh '''
+                    . venv/bin/activate
+                    pip install -r requirements.txt
+                    npm install redis-server
+                    '''
                 }
             }
-        }
+        }      
 
         stage('Create Virtual Environment') {
             steps {
@@ -34,6 +42,7 @@ pipeline {
                     // Run Django development server
                     sh '''
                     . venv/bin/activate
+                    redis-server
                     python3 manage.py runserver 
                     '''
                 }
