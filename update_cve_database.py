@@ -8,30 +8,23 @@ from sqlalchemy import create_engine
 from sqlalchemy import text
 import logging
 import pymysql
-import urllib.parse
+
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 API_KEY = '54ede83a-15f3-4b24-93b0-e6251f3bc2f2'
 
 # Database configuration
-# db_user = 'admin2'
-# db_password = 'admin123'
-# db_host = 'localhost'
-# db_port = '3306'
-# db_name = 'cve_database'
-# db_table = 'entire_cve_list'
-
-db_user = 'team27'
+db_user = 'redacted'
 db_password = 'redacted'
-db_host = 'redacted'
+db_host = '54.79.198.148'
 db_port = '3306'
 db_name = 'Mitigation'
-db_table = 'entire_cve_list'
-db_password_encoded = urllib.parse.quote_plus(db_password)
+db_table = 'cve_data'
 
 # Create a connection to the database
-engine = create_engine(f'mysql+pymysql://{db_user}:{db_password_encoded}@{db_host}:{db_port}/{db_name}')
+engine = create_engine(f'mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}')
+
 
 logging.info("Database connection established.")
 def fetch_cve_data(start_date, end_date):
@@ -74,7 +67,7 @@ def set_base_severity(base_score, base_severity):
 def process_vulnerability(vulnerability):
     cve_id = vulnerability['cve']['id']
     published_date = vulnerability['cve']['published']
-    Last_Modified_Date = vulnerability['cve']["lastModified"]
+    last_modified_date = vulnerability['cve']["lastModified"]
     references = vulnerability['cve']['references']
     reference_list = [f"{ref['url']} ({ref['source']})" for ref in references]
     references_str = "; ".join(reference_list)
@@ -85,13 +78,13 @@ def process_vulnerability(vulnerability):
     cvss_metrics = vulnerability['cve']['metrics'].get('cvssMetricV31', [None])[0] or \
                    vulnerability['cve']['metrics'].get('cvssMetricV30', [None])[0] or \
                    vulnerability['cve']['metrics'].get('cvssMetricV2', [None])[0]
-    CWE = 'N/A'
+    cwe = 'N/A'
 
     for weakness in weaknesses:
         weakness_descriptions = weakness.get('description', [])
         for w_description in weakness_descriptions:
             if w_description.get('lang') == 'en':
-                CWE = w_description.get('value', 'N/A')
+                cwe = w_description.get('value', 'N/A')
                 break
 
     affected_platform = []
@@ -123,7 +116,7 @@ def process_vulnerability(vulnerability):
 
     base_severity = set_base_severity(base_score, base_severity)
 
-    return [cve_id, description, published_date, Last_Modified_Date, affected_platform_str, version, base_score, base_severity, references_str, CWE, assigner]
+    return [cve_id, description, published_date, last_modified_date, affected_platform_str, version, base_score, base_severity, references_str, cwe, assigner]
 
 def extract_cve_details(cve_items, seen_cve_ids):
     cve_list = []
@@ -137,7 +130,7 @@ def extract_cve_details(cve_items, seen_cve_ids):
 def read_latest_published_date():
     try:
         with engine.connect() as conn:
-            result = conn.execute(text(f"SELECT MAX(Published_Date) FROM {db_table}"))
+            result = conn.execute(text(f"SELECT MAX(published_date) FROM {db_table}"))
             latest_published_date = result.scalar()
             if latest_published_date:
                 return latest_published_date
@@ -157,9 +150,9 @@ def remove_duplicates(cve_list):
 def insert_data_to_database(cve_list):
     try:
         df = pd.DataFrame(cve_list, columns=[
-            'CVE_ID', 'Description', 'Published_Date', 'Last_Modified_Date', 'Affected_Platform', 'CVSS_Version', 'Base_Score', 'Base_Severity', 'References', 'CWE', 'assigner'])
-        df['Published_Date'] = pd.to_datetime(df['Published_Date'], errors='coerce')
-        df['Last_Modified_Date'] = pd.to_datetime(df['Last_Modified_Date'], errors='coerce')
+            'cve_id', 'description', 'published_date', 'last_modified_date', 'affected_platform', 'cvss_version', 'base_score', 'base_severity', 'references_list', 'cwe', 'assigner'])
+        df['published_date'] = pd.to_datetime(df['published_date'], errors='coerce')
+        df['last_modified_date'] = pd.to_datetime(df['last_modified_date'], errors='coerce')
         df.to_sql(db_table, con=engine, if_exists='append', index=False)
         logging.info("Data has been successfully inserted into the database.")
     except Exception as e:
@@ -170,10 +163,8 @@ def initial_fetch_and_save():
     if latest_published_date:
         logging.info(f"Latest published date in the existing database: {latest_published_date}")
         try:
-            latest_published_date=str(latest_published_date)
             latest_published_date = datetime.strptime(latest_published_date, '%Y-%m-%d %H:%M:%S.%f')
         except ValueError:
-            latest_published_date = str(latest_published_date)
             latest_published_date = datetime.strptime(latest_published_date, '%Y-%m-%d %H:%M:%S')
         start_date = latest_published_date.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'  # Format correctly for the API
     else:
