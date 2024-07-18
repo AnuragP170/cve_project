@@ -8,8 +8,8 @@ import re
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-FEEDLY_API_KEY = 'fe_3o8diUvBPd543aLwFaN6AsjPxoPvCyLyQbTUqx3m'  # Replace with your Feedly API key
-TEAM_ID = 'team-rk0k'  # Your team ID
+FEEDLY_API_KEY = 'redacted'  # Replace with your Feedly API key
+TEAM_ID = 'redacted'  # Your team ID
 
 # Function to fetch ransomware CVEs from Feedly using streams
 def fetch_ransomware_cves_from_feedly(feedly_api_key, stream_id):
