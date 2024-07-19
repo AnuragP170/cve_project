@@ -15,11 +15,14 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import path
-from .views import update_page, update_cves, load_cve_data, load_ransomware_data
+from .views import update_page, update_cves, load_cve_data, load_ransomware_data, update_ransomware_cves_view, update_ransomware_page
 
 urlpatterns = [
     path('', load_cve_data, name='cve_list'),
     path('update/', update_page, name='update_page'),
     path('update-cves/', update_cves, name='update_cves'),
-    path('ransomware/', load_ransomware_data, name='ransomware_cves')
+    path('ransomware/', load_ransomware_data, name='ransomware_cves'),
+    path('update-ransomware-cves/', update_ransomware_cves_view, name='update_ransomware_cves'),
+    path('update-ransomware/', update_ransomware_page, name='update_ransomware_page'),
 ]
+

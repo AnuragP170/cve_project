@@ -15,8 +15,11 @@ import subprocess
 from .models import CVEEntry, RansomwareCVEEntry
 from dateutil import parser
 import pytz
-
+import json
+import os
 API_KEY = '54ede83a-15f3-4b24-93b0-e6251f3bc2f2'
+FILENAME = 'processed_cve_data.xlsx'
+RANSOMWARE_CVE_FILE = 'ransomware_merged.xlsx'
 
 def load_cve_data(request):
     query = request.GET.get('q')  # Get the search query from request
@@ -332,3 +335,26 @@ def load_ransomware_data(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     return render(request, 'cve_app/ransomware.html', {'page_obj': page_obj})
+def get_latest_update_info():
+    if os.path.exists(UPDATE_LOG_FILE):
+        with open(UPDATE_LOG_FILE, 'r') as log_file:
+            update_info = json.load(log_file)
+        return update_info
+    else:
+        return {'latest_update': 'N/A', 'new_cves': []}
+
+def update_ransomware_cves_view(request):
+    if request.method == 'POST':
+        try:
+            # Run the update ransomware CVEs script
+            subprocess.run(['python', 'update_ransomware_cves.py'], capture_output=True, text=True, check=True)
+            # Get the latest update info
+            update_info = get_latest_update_info()
+            return JsonResponse({'message': 'Ransomware CVEs updated successfully!', **update_info}, status=200)
+        except subprocess.CalledProcessError as e:
+            return JsonResponse({'message': f'An error occurred: {e}', 'latest_update': 'N/A', 'new_cves': []}, status=500)
+    return JsonResponse({'message': 'Invalid request method.'}, status=405)
+
+def update_ransomware_page(request):
+    update_info = get_latest_update_info()
+    return render(request, 'cve_app/update_ransomware_page.html', update_info)

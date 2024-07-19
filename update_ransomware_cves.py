@@ -4,12 +4,16 @@ import openpyxl
 import os
 import logging
 import re
+from datetime import datetime
+import json
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-FEEDLY_API_KEY = 'redacted'  # Replace with your Feedly API key
-TEAM_ID = 'redacted'  # Your team ID
+FEEDLY_API_KEY = 'fe_3o8diUvBPd543aLwFaN6AsjPxoPvCyLyQbTUqx3m'  # Replace with your Feedly API key
+TEAM_ID = 'team-rk0k'  # Your team ID
+
+UPDATE_LOG_FILE = 'update_log.json'
 
 # Function to fetch ransomware CVEs from Feedly using streams
 def fetch_ransomware_cves_from_feedly(feedly_api_key, stream_id):
@@ -45,8 +49,8 @@ def fetch_ransomware_cves_from_feedly(feedly_api_key, stream_id):
     
     return list(cve_ids)
 
-# Function to append CVE IDs to cves_from_cisa.txt
-def append_cve_ids_to_file(cve_ids, file_name):
+# Function to append CVE IDs to cves_from_cisa.txt and log the update
+def append_cve_ids_to_file(cve_ids, file_name, log_file):
     existing_cves = set()
     
     # Read existing CVEs from the file
@@ -60,7 +64,7 @@ def append_cve_ids_to_file(cve_ids, file_name):
     
     if not new_cves:
         logging.info("No new CVE IDs found.")
-        return False
+        return [], False
     
     # Append new CVEs to the set
     existing_cves.update(new_cves)
@@ -70,8 +74,17 @@ def append_cve_ids_to_file(cve_ids, file_name):
         for cve_id in sorted(existing_cves):
             file.write(f"{cve_id}\n")
     
+    # Log the update
+    update_log = {
+        'latest_update': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'new_cves': sorted(new_cves)
+    }
+    
+    with open(log_file, 'w') as log:
+        json.dump(update_log, log, indent=4)
+    
     logging.info(f"CVE IDs appended to {file_name}")
-    return True
+    return sorted(new_cves), True
 
 # Ensure datasets directory exists
 if not os.path.exists('datasets'):
@@ -80,7 +93,9 @@ if not os.path.exists('datasets'):
 # Main execution
 if __name__ == "__main__":
     cve_ids = fetch_ransomware_cves_from_feedly(FEEDLY_API_KEY, f"enterprise/{TEAM_ID}/category/global.all")
-    if append_cve_ids_to_file(cve_ids, "cves_from_cisa.txt"):
+    new_cves, updated = append_cve_ids_to_file(cve_ids, "cves_from_cisa.txt", UPDATE_LOG_FILE)
+    if updated:
         print("Ransomware CVE update process completed.")
+        print(f"New CVEs added: {new_cves}")
     else:
         print("No new ransomware CVEs found. No update needed.")
