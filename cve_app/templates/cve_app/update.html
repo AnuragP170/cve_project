@@ -19,9 +19,6 @@
                     <a class="nav-link" href="../update/">Update</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="../checklist/">Checklist</a>
-                </li>
-                <li class="nav-item">
                     <a class="nav-link" href="../ransomware/">Ransomware</a>
                 </li>
             </ul>
@@ -55,18 +52,17 @@
                 statusMessage.innerText = data.message;
                 document.getElementById("latest-date").innerText = data.latest_date;
 
-                // Display new entries
+                // Display new entries in a table
                 newEntriesDiv.innerHTML = '<h5>New Entries:</h5>';
                 if (data.new_entries.length === 0) {
                     newEntriesDiv.innerHTML += '<p>None</p>';
                 } else {
-                    var ul = document.createElement('ul');
+                    var table = '<table class="table table-striped"><thead><tr><th scope="col">CVE ID</th></tr></thead><tbody>';
                     data.new_entries.forEach(function(cve_id) {
-                        var li = document.createElement('li');
-                        li.innerText = cve_id;
-                        ul.appendChild(li);
+                        table += '<tr><td>' + cve_id + '</td></tr>';
                     });
-                    newEntriesDiv.appendChild(ul);
+                    table += '</tbody></table>';
+                    newEntriesDiv.innerHTML += table;
                 }
 
                 // Re-enable the button and reset the text
@@ -82,5 +78,6 @@
             });
     };
 </script>
+
 </body>
 </html>

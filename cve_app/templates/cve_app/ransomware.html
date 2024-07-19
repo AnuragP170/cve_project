@@ -29,6 +29,17 @@
         .table-top-scroll table {
             visibility: hidden; /* Hide the table but keep its structure */
         }
+
+table thead {
+    background-color: #343a40;
+    color: white;
+}
+
+table thead th {
+    padding: 10px;
+    text-align: left;
+    text-align:center;
+}
     </style>
     <script>
         $(document).ready(function() {
@@ -51,9 +62,6 @@
             <ul class="navbar-nav">
                 <li class="nav-item">
                     <a class="nav-link" href="../update/">Update</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="../checklist/">Checklist</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="../ransomware/">Ransomware</a>
@@ -85,21 +93,29 @@
             <table class="table table-striped">
                 <thead>
                     <tr>
-                        <th>CVE ID</th>
+                        <th style="padding: 5px;">CVE ID</th>
                         <th>Description</th>
                         <th>Mitigation</th>
                         <th>Ransomware </th>
-                        <th>References </th>
+                        <th>School </th>
+                        <th>CISA </th>
+                        <th>NVD </th>
+                        <th>CVE References </th>
+                        <th>Ransomware References</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for ransomware in page_obj %}
                     <tr>
-                        <td>{{ ransomware.cve_id }}</td>
+                        <td style="margin: 2px;">{{ ransomware.cve_id }}</td>
                         <td>{{ ransomware.description }}</td>
                         <td>{{ ransomware.mitigation }}</td>
                         <td>{{ ransomware.ransomware }}</td>
-                        <td>{{ ransomware.ransomware_url }}</td>
+                        <td>{{ ransomware.school }}</td>
+                        <td>{{ ransomware.CISA }}</td>
+                        <td>{{ ransomware.NVD }}</td>
+                        <td>{{ ransomware.cve_references_url }}</td>
+                        <td>{{ ransomware.rw_references_url }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

@@ -9,12 +9,12 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 # Database credentials
 db_config = {
-    'user': 'redacted',
-    'password': 'redacted',
-    'host': '54.79.198.148',
+    'user': 'team27',
+    'password': 'T3@m27!',
+    'host': '13.237.28.154',
     'port': 3306,
     'database': 'Mitigation',
-    'table': 'cve_data'
+    'table': 'ransomware_cve_list'
 }
 db_password_encoded = urllib.parse.quote_plus(db_config['password'])
 
@@ -44,39 +44,39 @@ def table_exists(conn, db_name, table_name):
     except Exception as e:
         logging.error(f"Error checking if table exists: {e}")
         return False
-
-# Function to create the CVE table based on Excel columns
-def create_cve_table(conn, db_name, table_name, columns):
-    use_db_query = f"USE {db_name};"
-    
-    create_table_query = f"CREATE TABLE IF NOT EXISTS `{table_name}` ("
-    column_definitions = ["`entry_id` INT AUTO_INCREMENT PRIMARY KEY"]
-    
-    for column_name in columns:
-        sql_type = 'TEXT'  # Default to TEXT for simplicity
-        if 'date' in column_name.lower():
-            sql_type = 'DATETIME'
-        
-        if column_name == 'CVE ID':
-            column_definitions.append(f"`{column_name.replace(' ', '_')}` VARCHAR(255) NULL")
-        else:
-            column_definitions.append(f"`{column_name.replace(' ', '_')}` {sql_type} NULL")
-    
-    create_table_query += ", ".join(column_definitions) + ", UNIQUE (`CVE_ID`(255)));"
-
-    with conn.cursor() as cursor:
-        cursor.execute(use_db_query)
-        cursor.execute(create_table_query)
-        conn.commit()
-        logging.info(f"Table '{table_name}' created or already exists")
+#
+# # Function to create the CVE table based on Excel columns
+# def create_cve_table(conn, db_name, table_name, columns):
+#     use_db_query = f"USE {db_name};"
+#
+#     create_table_query = f"CREATE TABLE IF NOT EXISTS `{table_name}` ("
+#     column_definitions = ["`entry_id` INT AUTO_INCREMENT PRIMARY KEY"]
+#
+#     for column_name in columns:
+#         sql_type = 'TEXT'  # Default to TEXT for simplicity
+#         if 'date' in column_name.lower():
+#             sql_type = 'DATETIME'
+#
+#         if column_name == 'CVE ID':
+#             column_definitions.append(f"`{column_name.replace(' ', '_')}` VARCHAR(255) NULL")
+#         else:
+#             column_definitions.append(f"`{column_name.replace(' ', '_')}` {sql_type} NULL")
+#
+#     create_table_query += ", ".join(column_definitions) + ", UNIQUE (`CVE_ID`(255)));"
+#
+#     with conn.cursor() as cursor:
+#         cursor.execute(use_db_query)
+#         cursor.execute(create_table_query)
+#         conn.commit()
+#         logging.info(f"Table '{table_name}' created or already exists")
 
 # Function to insert data into the CVE table using SQLAlchemy for bulk insertion
 def insert_cve_data(engine, cve_data, table_name):
     try:
         # Standardize column names and remove entry_id if present
         cve_data.columns = [col.replace(' ', '_') for col in cve_data.columns]
-        if 'entry_id' in cve_data.columns:
-            cve_data.drop(columns=['entry_id'], inplace=True)
+        if 'rw_cve_entry_id' in cve_data.columns:
+            cve_data.drop(columns=['rw_cve_entry_id'], inplace=True)
 
         # Replace NaN with None
         cve_data = cve_data.where(pd.notnull(cve_data), None)
@@ -102,7 +102,7 @@ def count_entries(engine, table_name):
 # Main function to execute the process
 def main():
     # Path to the CVE Excel file
-    excel_file_path = 'processed_cve_data.xlsx'
+    excel_file_path = 'ransomware_merged.xlsx'
 
     # Load the CVE data from Excel
     cve_data = pd.read_excel(excel_file_path)
@@ -125,9 +125,9 @@ def main():
         table_name = db_config['table']
 
         # Create the CVE table if it doesn't exist
-        if not table_exists(conn, db_name, table_name):
-            create_cve_table(conn, db_name, table_name, columns)
-        conn.close()
+        # if not table_exists(conn, db_name, table_name):
+        #     create_cve_table(conn, db_name, table_name, columns)
+        # conn.close()
 
     # Create SQLAlchemy engine for bulk insertion
     engine = create_engine(f'mysql+pymysql://{db_config["user"]}:{db_password_encoded}@{db_config["host"]}:{db_config["port"]}/{db_name}')

@@ -1,63 +1,38 @@
+import warnings
+
 from django.shortcuts import render, redirect
 from django.core.cache import cache
 import openpyxl
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import time
 import requests
+import re
 import traceback
 import subprocess
-import cve_app.security_detection
+from .models import CVEEntry, RansomwareCVEEntry
+from dateutil import parser
+import pytz
 
 API_KEY = '54ede83a-15f3-4b24-93b0-e6251f3bc2f2'
-FILENAME = 'processed_cve_data.xlsx'
-RANSOMWARE_CVE_FILE = 'ransomware_merged.xlsx'
 
 def load_cve_data(request):
     query = request.GET.get('q')  # Get the search query from request
     filter_ransomware = 'filter_ransomware' in request.GET  # Check if the filter button is pressed
     cve_entries = cache.get('cve_entries')
     if not cve_entries:
-        # Load data from Excel file
-        wb = openpyxl.load_workbook(FILENAME)
-        sheet = wb.active
-        
-        cve_entries = []
-        for row in sheet.iter_rows(min_row=11, values_only=True):
-            cve_entry = {
-                'cve_id': row[0],
-                'description': row[1] if row[1] else "",
-                'published_date': row[2] if row[2] else "",
-                'modified_date': row[3] if row[3] else "",
-                'affected_platform': row[4] if row[4] else "",
-                'version': row[5] if row[5] else "",
-                'vector_string': row[6] if row[6] else "",
-                'base_score': row[7] if row[7] else "",
-                'base_severity': row[8] if row[8] else "",
-                'references': row[9] if row[9] else "",
-                'cwe': row[10] if row[10] else "",
-                'assigner': row[11] if row[11] else ""
-            }
-            cve_entries.append(cve_entry)
-        
+        # Load data from database
+        cve_entries = list(CVEEntry.objects.all().values())
         cache.set('cve_entries', cve_entries, timeout=60*15)  # Cache for 15 minutes
 
     cve_entries.reverse()
     # Filter entries based on search query if it exists
     if filter_ransomware:
-        # Filter CVEs based on the contents of cves_from_cisa.txt
-        try:
-            # with open('cves_from_cisa.txt', 'r') as file:
-            #     cisa_cves = set(line.strip() for line in file)
-            # filtered_entries = [entry for entry in cve_entries if entry['cve_id'] in cisa_cves]
-            ransomware_wb = openpyxl.load_workbook(RANSOMWARE_CVE_FILE)
-            ransomware_sheet = ransomware_wb.active
-            ransomware_cves = set(cell.value for cell in ransomware_sheet['A'] if cell.value)
-            filtered_entries = [entry for entry in cve_entries if entry['cve_id'] in ransomware_cves]
-        except FileNotFoundError:
-            filtered_entries = cve_entries  # If the file is not found, do not filter
+        # Filter CVEs based on the contents of RansomwareEntry
+        ransomware_cves = set(RansomwareCVEEntry.objects.values_list('cve_id', flat=True))
+        filtered_entries = [entry for entry in cve_entries if entry['cve_id'] in ransomware_cves]
     else:
         filtered_entries = cve_entries
 
@@ -65,7 +40,7 @@ def load_cve_data(request):
     if query:
         query_parts = query.lower().split()
         filtered_entries = [
-            entry for entry in filtered_entries 
+            entry for entry in filtered_entries
             if all(
                 any(part in (str(value).lower() or '') for value in entry.values())
                 for part in query_parts
@@ -115,56 +90,66 @@ def setBaseSeverity(base_score, base_severity):
     return base_severity
 
 def process_vulnerability(vulnerability):
-    cve_id = vulnerability['cve']['id']
-    published_date = vulnerability['cve']['published']
-    last_modified_date = vulnerability['cve']["lastModified"]
-    references = vulnerability['cve']['references']
-    reference_list = [f"{ref['url']} ({ref['source']})" for ref in references]
-    references_str = "; ".join(reference_list)
-    description = vulnerability['cve']['descriptions'][0]['value']
-    weaknesses = vulnerability['cve'].get('weaknesses', [])
-    configurations = vulnerability.get('configurations', [])
+    processed_data = {}
+    try:
+        processed_data['cve_id'] = vulnerability['cve']['id']
+        processed_data['published_date'] = vulnerability['cve']['published']
+        processed_data['last_modified_date'] = vulnerability['cve']["lastModified"]
 
-    cvss_metrics = vulnerability['cve']['metrics'].get('cvssMetricV31', [None])[0] or \
-                   vulnerability['cve']['metrics'].get('cvssMetricV30', [None])[0] or \
-                   vulnerability['cve']['metrics'].get('cvssMetricV2', [None])[0]
-    cwe = 'N/A'
+        references = vulnerability['cve']['references']
+        reference_list = [f"{ref['url']} ({ref['source']})" for ref in references]
+        processed_data['references'] = "; ".join(reference_list)
 
-    for weakness in weaknesses:
-        weakness_descriptions = weakness.get('description', [])
-        for w_description in weakness_descriptions:
-            if w_description.get('lang') == 'en':
-                cwe = w_description.get('value', 'N/A')
-                break
+        processed_data['description'] = vulnerability['cve']['descriptions'][0]['value']
 
-    affected_platform = 'N/A'
-    for config in configurations:
-        nodes = config.get('nodes', [])
-        for node in nodes:
-            cpe_matches = node.get('cpeMatch', [])
-            for cpe in cpe_matches:
-                affected_platform = cpe.get('criteria', 'N/A')
-                break
+        weaknesses = vulnerability['cve'].get('weaknesses', [])
+        configurations = vulnerability.get('configurations', [])
 
+        cvss_metrics = vulnerability['cve']['metrics'].get('cvssMetricV31', [None])[0] or \
+                       vulnerability['cve']['metrics'].get('cvssMetricV30', [None])[0] or \
+                       vulnerability['cve']['metrics'].get('cvssMetricV2', [None])[0]
 
-    if cvss_metrics:
-        cvss_data = cvss_metrics['cvssData']
-        version = cvss_data['version']
-        vector_string = cvss_data['vectorString']
-        base_score = cvss_data.get('baseScore', 'N/A')
-        base_severity = cvss_metrics.get('baseSeverity', 'N/A')
-        assigner = cvss_metrics.get('source', 'N/A')
-    else:
-        version = 'N/A'
-        vector_string = 'N/A'
-        base_score = 'N/A'
-        base_severity = 'N/A'
-        assigner = 'N/A'
+        processed_data['cwe'] = 'N/A'
+        for weakness in weaknesses:
+            weakness_descriptions = weakness.get('description', [])
+            for w_description in weakness_descriptions:
+                if w_description.get('lang') == 'en':
+                    processed_data['cwe'] = w_description.get('value', 'N/A')
+                    break
 
-    base_severity = setBaseSeverity(base_score, base_severity)
-    print("set base severity :", base_severity)
+        affected_platform = []
+        for config in configurations:
+            nodes = config.get('nodes', [])
+            for node in nodes:
+                cpe_matches = node.get('cpeMatch', [])
+                for cpe in cpe_matches:
+                    criteria = cpe.get('criteria', 'N/A')
+                    if criteria != 'N/A':
+                        match = re.match(r'cpe:2\.3:[aho]:([^:]+):([^:]+):([^:]+)', criteria)
+                        if match:
+                            platform, product, version = match.groups()
+                            affected_platform.append(f"{platform}:{product}:{version}")
 
-    return [cve_id, description, published_date, last_modified_date, affected_platform, version, vector_string, base_score, base_severity, references_str, cwe, assigner]
+        processed_data['affected_platform'] = ', '.join(affected_platform) if affected_platform else 'N/A'
+
+        if cvss_metrics:
+            cvss_data = cvss_metrics['cvssData']
+            processed_data['cvss_version'] = cvss_data['version']
+            processed_data['base_score'] = cvss_data.get('baseScore', 'N/A')
+            processed_data['base_severity'] = cvss_metrics.get('baseSeverity', 'N/A')
+            processed_data['assigner'] = cvss_metrics.get('source', 'N/A')
+        else:
+            processed_data['cvss_version'] = 'N/A'
+            processed_data['base_score'] = 0
+            processed_data['base_severity'] = 'N/A'
+            processed_data['assigner'] = 'N/A'
+
+        processed_data['base_severity'] = setBaseSeverity(processed_data['base_score'],
+                                                            processed_data['base_severity'])
+    except KeyError as e:
+        print(f"KeyError: {e} - Data: {vulnerability}")
+
+    return processed_data
 
 def extract_cve_details(cve_items, seen_cve_ids):
     cve_list = []
@@ -172,52 +157,101 @@ def extract_cve_details(cve_items, seen_cve_ids):
         cve_id = item['cve']['id']
         if cve_id not in seen_cve_ids:
             seen_cve_ids.add(cve_id)
-            cve_list.append(process_vulnerability(item))
+            processed_data = process_vulnerability(item)
+            if processed_data:
+                cve_list.append(processed_data)
     return cve_list
 
-def save_to_excel(cve_list, filename):
-    df = pd.DataFrame(cve_list, columns=[
-        'CVE ID', 'Description', 'Published Date', 'Last Modified Date', 'Affected Platform', 'CVSS Version', 'CVSS vector string', 'Base Score', 'Base Severity', 'References', 'CWE', 'assigner'])
-    with pd.ExcelWriter(filename, engine='openpyxl', mode='a', if_sheet_exists='overlay') as writer:
-        df.to_excel(writer, index=False, header=False, startrow=writer.sheets['Sheet1'].max_row)
-
-def read_latest_published_date(filename):
+def read_latest_published_date():
     try:
-        df = pd.read_excel(filename)
-        if not df.empty:
-            latest_published_date_str = df.iloc[-1]['Published Date']
-            latest_published_date = datetime.strptime(latest_published_date_str, '%Y-%m-%dT%H:%M:%S.%f')
-            return latest_published_date
+        latest_published_date = CVEEntry.objects.latest('published_date').published_date
+        return latest_published_date
+    except CVEEntry.DoesNotExist:
+        return None
     except Exception as e:
-        print(f"Error reading file {filename}: {e}")
+        print(f"Error reading latest published date from database: {e}")
     return None
 
 def remove_duplicates(cve_list):
     seen = set()
     unique_list = []
     for cve in cve_list:
-        if cve[0] not in seen:
+        if cve['cve_id'] not in seen:
             unique_list.append(cve)
-            seen.add(cve[0])
+            seen.add(cve['cve_id'])
     return unique_list
-def initial_fetch_and_save(filename):
-    latest_published_date = read_latest_published_date(filename)
+
+def get_next_entry_id():
+    try:
+        latest_entry = CVEEntry.objects.latest('entry_id')
+        return latest_entry.entry_id + 1
+    except CVEEntry.DoesNotExist:
+        return 1
+    except Exception as e:
+        print(f"Error getting the next entry ID: {e}")
+        return None
+
+
+def fetch_existing_cve_ids():
+    return set(CVEEntry.objects.values_list('cve_id', flat=True))
+
+
+def insert_data_to_database(cve_list):
+    try:
+        existing_cve_ids = fetch_existing_cve_ids()
+        next_entry_id = get_next_entry_id()
+        if next_entry_id is None:
+            print("Failed to get the next entry ID.")
+            return
+
+        for cve in cve_list:
+            if cve['cve_id'] in existing_cve_ids:
+                print(f"CVE {cve['cve_id']} already exists in the database.")
+                continue
+
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=RuntimeWarning)
+                # Parse datetime strings to datetime objects
+                if isinstance(cve['published_date'], str):
+                    cve['published_date'] = parser.parse(cve['published_date']).replace(tzinfo=pytz.UTC)
+                if isinstance(cve['last_modified_date'], str):
+                    cve['last_modified_date'] = parser.parse(cve['last_modified_date']).replace(tzinfo=pytz.UTC)
+
+                cve['entry_id'] = next_entry_id  # Manually set entry_id
+                # Insert data into the database using Django ORM
+                CVEEntry.objects.create(**cve)
+
+                next_entry_id += 1
+        print("Data has been successfully inserted into the database.")
+    except Exception as e:
+        print(f"An error occurred while inserting data into the database: {e}")
+
+def initial_fetch_and_save():
+    latest_published_date = read_latest_published_date()
     if latest_published_date:
-        print(f"Latest published date in the existing file: {latest_published_date}")
-        start_date = latest_published_date.strftime('%Y-%m-%dT%H:%M:%S.%f')
-       
-        print("start date: ", start_date)
+        try:
+            latest_published_date = str(latest_published_date)
+            # Attempt to parse with timezone information
+            latest_published_date = datetime.fromisoformat(latest_published_date)
+        except ValueError:
+            latest_published_date = str(latest_published_date)
+            latest_published_date = datetime.strptime(latest_published_date, '%Y-%m-%d %H:%M:%S')
+
+        latest_published_date = latest_published_date.replace(tzinfo=pytz.UTC)
+        start_date = latest_published_date.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'  # Format correctly for the API
     else:
         print("No existing CVE data found. Starting from scratch.")
-        start_date = '2000-01-01T00:00:00.000'  # Arbitrary start date for initial run
+        start_date = '2000-01-01T00:00:00.000Z'  # Arbitrary start date for initial run
 
-    start_date_dt = datetime.strptime(start_date, '%Y-%m-%dT%H:%M:%S.%f')
-    # uncomment this to make end date as current date and time
-    end_date_dt = datetime.utcnow()  # Use the current date and time as the end date
-    end_date = end_date_dt.strftime('%Y-%m-%dT%H:%M:%S.%f')
-    
-    print("End date: ", end_date)
-    start_index = 0
+    end_date_utc = datetime.utcnow().replace(tzinfo=pytz.UTC)
+    end_date_singapore = end_date_utc.astimezone(pytz.timezone('Asia/Singapore'))
+
+    print(f"Time now in UTC:  {end_date_utc.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3]}Z")
+    print(f"Time now in Singapore: {end_date_singapore.strftime('%Y-%m-%d %H:%M:%S')}")
+
+    end_date = end_date_utc.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+    print(f"Fetching CVE data from {start_date} to {end_date}")
+
     all_cve_list = []
     seen_cve_ids = set()
 
@@ -230,11 +264,10 @@ def initial_fetch_and_save(filename):
             all_cve_list.extend(cve_list)
             if not cve_list:
                 break  # Exit the loop if no CVE items were fetched
-            #start_index += 2000
             print(f"Fetched {len(cve_items)} CVEs")
             time.sleep(6)
     except KeyboardInterrupt:
-        print("Keyboard interrupt received. Saving collected data to Excel.")
+        print("Keyboard interrupt received. Saving collected data to database.")
         raise
     except Exception as e:
         print(f"Error occurred: {e}")
@@ -242,84 +275,60 @@ def initial_fetch_and_save(filename):
     finally:
         if all_cve_list:
             unique_cve_list = remove_duplicates(all_cve_list)
-            save_to_excel(unique_cve_list, filename)
-            print(f"Data saved to {filename}")
+            insert_data_to_database(unique_cve_list)
         else:
             print("No new CVEs to save.")
     return all_cve_list
 
 def update_cves(request):
     try:
-        new_entries = initial_fetch_and_save(FILENAME)
-        latest_date = read_latest_published_date(FILENAME)
+        new_entries = initial_fetch_and_save()
+        latest_date = read_latest_published_date()
         message = "Data updated!"
         latest_date_str = latest_date.strftime('%Y-%m-%d')
-        new_cve_ids = [entry[0] for entry in new_entries]
+        new_cve_ids = [entry['cve_id'] for entry in new_entries] if new_entries else []
     except Exception as e:
         message = f"An error occurred: {e}"
         traceback.print_exc()
         latest_date_str = "Unknown"
         new_cve_ids = []
-    
+
     return JsonResponse({"message": message, "latest_date": latest_date_str, "new_entries": new_cve_ids})
-
-
 def update_page(request):
-    latest_date = read_latest_published_date(FILENAME)
+    latest_date = read_latest_published_date()
     context = {'latest_date': latest_date.strftime('%Y-%m-%d') if latest_date else 'Unknown'}
     return render(request, 'cve_app/update.html', context)
+
+
 def run_cisa_script(request):
     subprocess.run(['python', 'CISA_ransomware.py'], check=True)
     return redirect('cve_list')
 
-def check_programs_view(request):
-    status = cve_app.security_detection.get_security_status()
-    print(status)
-    return render(request, 'cve_app/status.html', {'status': status})
 
 def load_ransomware_data(request):
-    query = request.GET.get('q')  # Get the search query from request
+    query = request.GET.get('q')  # Get the search query from the request
     ransomware_entries = cache.get('ransomware_entries')
     if not ransomware_entries:
-        # Load data from Excel file
+        # Load data from the database
+        ransomware_entries = list(RansomwareCVEEntry.objects.all().values())
 
-        wb = openpyxl.load_workbook(RANSOMWARE_CVE_FILE)
-        sheet = wb.active
-        
-        ransomware_entries = []
-        for row in sheet.iter_rows(min_row=9, values_only=True):
-            if row[0] is None:  # Skip rows where cve_id is None
-                continue
-            ransomware_entry = {
-                'cve_id': row[0],
-                'description': row[1] if row[1] else "",
-                'mitigation': row[2] if row[2] else "",
-                'ransomware': row[3] if row[3] else "",
-                'school': row[4] if row[4] else "",
-                'CISA': row[5] if row[5] else "",
-                'NVD': row[6] if row[6] else "",
-                'references': row[7] if row[7] else "",
-                'ransomware_url': row[8] if row[8] else ""
-            }
-            ransomware_entries.append(ransomware_entry)
-        
-        cache.set('ransomware_entries', ransomware_entries, timeout=60*15)  # Cache for 15 minutes
+        # Cache the data for 15 minutes
+        cache.set('ransomware_entries', ransomware_entries, timeout=60*15)
 
-    # Further filter entries based on search query if it exists
+    # Further filter entries based on the search query if it exists
     if query:
         query_parts = query.lower().split()
-        ransomware_entries = [
-            entry for entry in ransomware_entries 
+        filtered_entries = []
+        for entry in ransomware_entries:
             if all(
                 any(part in (str(value).lower() or '') for value in entry.values())
                 for part in query_parts
-            )
-        ]
+            ):
+                filtered_entries.append(entry)
+        ransomware_entries = filtered_entries
 
-    # # Paginate the filtered entries
+    # Paginate the filtered entries
     paginator = Paginator(ransomware_entries, 50)  # Show 50 entries per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     return render(request, 'cve_app/ransomware.html', {'page_obj': page_obj})
-
-

@@ -15,9 +15,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 API_KEY = '54ede83a-15f3-4b24-93b0-e6251f3bc2f2'
 
 # Database configuration
-db_user = 'redacted'
-db_password = 'redacted'
-db_host = '54.79.198.148'
+db_user = 'team27'
+db_password = 'T3@m27!'
+db_host = '13.237.28.154'
 db_port = '3306'
 db_name = 'Mitigation'
 db_table = 'cve_data'
