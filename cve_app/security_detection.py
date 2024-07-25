@@ -2,7 +2,6 @@ import platform
 import time
 import sys, os
 
-import openpyxl
 
 sys.path.append(os.getcwd())
 from cve_app.OS_checks.windows_check import *
@@ -62,60 +61,16 @@ def write_results_to_file(results, filename="security_check_results.txt"):
             file.write("\n")
 
 
-def search_excel_for_software(excel_path, software_name):
-    wb = openpyxl.load_workbook(excel_path)
-    sheet = wb.active
-
-    results = []
-    for row in sheet.iter_rows(min_row=2, values_only=True):  # Skip the header row
-        description = row[1]  # Assuming Description is the second column (index 1)
-        if software_name in description:
-            results.append(row)
-
-    return results
 
 
 if __name__ == "__main__":
-    #installed_software = get_installed_software_powershell()
-    #print key and value
-    #open xlsx file to search for software
-
-    # Path to your Excel file
-    excel_path = '../cleaned_cve_data.xlsx'  # Replace with the actual path to the Excel file
-
-    #get windows version
+    # Sample code for testing, this part is for just getting values from the programs
     os=platform.system()
     windows_number=platform.version()
 
-    tic = time.perf_counter()
-    print("checking for software: ", os)
-    matching_rows = search_excel_for_software(excel_path, os)
-    #end time
-    toc = time.perf_counter()
-    #extract version numbers in description
+       #extract version numbers in description
     version_numbers = re.findall(r'\d+\.\d+', windows_number)
 
-    print(f"Finished searching for {os} in {toc - tic:0.4f} seconds")
-    if matching_rows:
-        print(f"Matching rows for {os}:")
-        for row in matching_rows:
-            print(row)
-            version_numbers = re.findall(r'\d+\.\d+', row[2])
-            #if windows_number is lower than all values in version_numbers
-            if version_numbers:
-                if windows_number < max(version_numbers):
-                    print("The system is not up to date")
-            print(row)
+    print(get_security_status())
 
-    # for key in installed_software.keys():
-    #     #start time
-    #     tic = time.perf_counter()
-    #     print("checking for software: ", key)
-    #     matching_rows = search_excel_for_software(excel_path, key)
-    #     #end time
-    #     toc = time.perf_counter()
-    #     print(f"Finished searching for {key} in {toc - tic:0.4f} seconds")
-    #     if matching_rows:
-    #         print(f"Matching rows for {key}:")
-    #         for row in matching_rows:
-    #             print(row)
+

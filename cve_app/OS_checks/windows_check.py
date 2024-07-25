@@ -71,14 +71,12 @@ def check_windows_firewall_logging():
 
         for profile in profiles:
             result = subprocess.run(['netsh', 'advfirewall', 'show', profile, 'state'], capture_output=True, text=True)
-            version_result = subprocess.run(['netsh', 'advfirewall', 'show', 'version'], capture_output=True, text=True)
-            version = re.search(r'\bVersion\s*:\s*(\S+)', version_result.stdout).group(
-                1) if version_result.returncode == 0 else "Unknown version"
+
 
             if 'State                                 ON' in result.stdout:
-                logging_status.append(f"{profile} Logging: ON, Version: {version}")
+                logging_status.append(f"{profile} Logging: ON")
             elif 'State                                 OFF' in result.stdout:
-                logging_status.append(f"{profile} Logging: OFF, Version: {version}")
+                logging_status.append(f"{profile} Logging: OFF")
             else:
                 logging_status[profile] = "Error: Unable to determine"
         return logging_status
@@ -90,7 +88,7 @@ def check_windows_firewall_logging():
 
 def check_agent_based_log_collection_windows():
     programs = [
-        "wazuh-agent",
+        "Wazuhsvc", # the only one tested so far
         "splunkd",
         "qradar",
         "arcsight",
@@ -99,19 +97,18 @@ def check_agent_based_log_collection_windows():
         "securonix"
     ]
     detected_programs = []
+
     for program in programs:
         try:
-            result = subprocess.run(['sc', 'query', program], capture_output=True, text=True)
-            version_result = subprocess.run([program, '--version'], capture_output=True, text=True)
-            version = re.search(r'\b(\d+\.\d+)', version_result.stdout).group(
-                1) if version_result.returncode == 0 else "Unknown version"
-
-            if 'RUNNING' in result.stdout:
-                detected_programs.append(f"{program}, Version: {version}")
+            # Check if the service is running
+            for service in psutil.win_service_iter():
+                if str(service.name()).lower() == program.lower() :
+                    # Get the version of the program
+                    detected_programs.append(program)
         except Exception as e:
             print(f"Error checking {program}: {e}")
-    return detected_programs if detected_programs else ["Not detected"]
 
+    return detected_programs if detected_programs else ["Not detected"]
 
 def get_windows_version():
     os = platform.platform()
@@ -158,3 +155,5 @@ def get_installed_software_powershell():
 
     except subprocess.CalledProcessError as e:
         print(f"An error occurred: {e}")
+if __name__ == '__main__':
+    print(check_agent_based_log_collection_windows())

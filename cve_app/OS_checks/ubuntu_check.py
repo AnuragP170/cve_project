@@ -1,10 +1,10 @@
 import re
-import subprocess
+
 
 
 def check_ubuntu_firewall():
     programs = [
-        "ufw",
+        "ufw", # tested, but needs admin
     ]
     detected_programs = []
     for program in programs:
@@ -24,7 +24,7 @@ def check_ubuntu_firewall():
 def check_ubuntu_antivirus():
     detected_antivirus = []
     programs = [
-        "clamav"
+        "None" #no ubuntu antiviruses have been tested yet
     ]
     for program in programs:
         try:
@@ -59,13 +59,13 @@ def check_open_ports_ubuntu():
         return f"Error checking open ports: {e}"
 
 
-import re
-import subprocess
+
+
 
 
 def check_agent_based_log_collection_ubuntu():
     programs = [
-        "wazuh-agent",
+        "wazuh-agent", # the only one tested so far
         "splunkd",
         "qradar",
         "arcsight",
@@ -117,6 +117,7 @@ import subprocess
 
 
 def get_installed_programs_ubuntu():
+    #has limitations, for example, programs that were not installed manually.
     try:
         result = subprocess.run(['dpkg-query', '-W'], capture_output=True,
                                 text=True)

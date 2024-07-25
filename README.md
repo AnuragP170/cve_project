@@ -6,7 +6,7 @@ the current excel file being displayed - extracted_cve_details.xlsx
 to run server
 use command - python3 manage.py runserver
 
-enter url - http://127.0.0.1:8000/cve-list/
+enter url - http://127.0.0.1:8000/
 
 to modify backend code - cve_app/views.py and cve_app/models.py
 
@@ -23,3 +23,48 @@ INSTALLATION OF PRE-REQUISITES
 
 
 reverse_excel_rows.py -> this script can be used to sort the CVEs in descending order (latest entries displayed first)
+
+# For checklist branch (this branch):
+
+
+## Files relevant to checklist functionality
+cve_app/security_detection.py
+cve_app/OS_checks/ubuntu_check.py
+cve_app/OS_checks/windows_check.py
+cve_app/templates/cve_app/status.html - for rendering page
+
+
+
+## Enabled URLS
+	urls in urls.py only have the checklist functionality Enabled.
+	
+	If accessing 127.0.0.1:8000 link does not immediately redirect you to /checklist, then access it via 127.0.0.1:8000/checklist in your browser.
+
+## Description of how the user environment checklist works
+
+### cve_app/security_detection.py
+	This is the main script that determines the operating system and then calls the appropriate functions from the OS-specific scripts (windows_check.py or ubuntu_check.py) to gather security information.
+It checks the firewall status, antivirus status, open ports, firewall logging, agent-based log collection, installed software.
+It writes the collected results to a file.
+
+Results are written to a .txt file in the format "security_check_results{OS}.txt"
+
+### ubuntu_check.py:
+	Codes here have been tested on ubuntu 20.04
+This script contains functions to check various security aspects specific to Ubuntu systems.
+Functions include checking the status of the firewall, antivirus, open ports, agent-based log collection, and syslog.
+It provides details such as whether the programs are running and their versions.
+
+requires admin permissions on ubuntu for checking firewall status.
+Wazuh agent is detectable along with version number.
+
+
+### windows_check.py:
+	Codes here have been tested on windows 11
+This script has functions to check various security aspects specific to Windows systems.
+Functions include checking the status of the firewall, antivirus, open ports, firewall logging, agent-based log collection, installed software, and system updates.
+It utilizes Windows-specific commands and tools (e.g., netsh, powershell) to gather this information.
+
+ check_agent_based_log_collection_windows does not fully work yet, as certain programs need to be paid for, thus we do not have access to test and check whether those programs exist on a system.
+ 
+ on windows, obtaining a version number for wazuh has not been found yet, although wazuh agents can be detected.
