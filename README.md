@@ -17,9 +17,8 @@ to modify settings/url config - cve_project/url.py and settings.py
 
 INSTALLATION OF PRE-REQUISITES
 
-1. pip install openpyxl django-import-export
-2. pip install django-redis
-3. enter command: redis-server 
+1. pip install -r requirements.txt
+
 
 
 reverse_excel_rows.py -> this script can be used to sort the CVEs in descending order (latest entries displayed first)
@@ -38,7 +37,11 @@ cve_app/templates/cve_app/status.html - for rendering page
 ## Enabled URLS
  - urls in urls.py only have the checklist functionality Enabled.
 	
- - If accessing ```127.0.0.1:8000``` link does not immediately redirect you to /checklist, then access it via ```127.0.0.1:8000/checklist``` in your browser.
+ - If accessing ```127.0.0.1:8000/``` link does not immediately redirect you to /checklist, then access it via ```127.0.0.1:8000/checklist/``` in your browser.
+
+ > [!TIP]
+> If the program throws a 301 when trying to access 127.0.0.1:8000/checklist/ , try clearing the cache or ensuring that the link has a trailing slash
+
 
 ## Description of how the user environment checklist works
 
