@@ -18,6 +18,8 @@ from django.contrib import admin
 from django.urls import include, path
 from django.shortcuts import redirect
 from cve_app import views
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('', lambda request: redirect('checklist/', permanent=True)),
@@ -26,4 +28,4 @@ urlpatterns = [
     # path('cve-list/', include('cve_app.urls')),
     # path('', lambda request: redirect('cve-list/', permanent=True)),
     # path('run_cisa_script/', views.run_cisa_script, name='run_cisa_script'),
-]
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
