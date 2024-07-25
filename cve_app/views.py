@@ -18,9 +18,7 @@ import pytz
 import json
 import os
 API_KEY = '54ede83a-15f3-4b24-93b0-e6251f3bc2f2'
-FILENAME = 'processed_cve_data.xlsx'
-RANSOMWARE_CVE_FILE = 'ransomware_merged.xlsx'
-
+UPDATE_LOG_FILE = 'update_log.json'
 def load_cve_data(request):
     query = request.GET.get('q')  # Get the search query from request
     filter_ransomware = 'filter_ransomware' in request.GET  # Check if the filter button is pressed
