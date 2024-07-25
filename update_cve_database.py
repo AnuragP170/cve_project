@@ -8,6 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy import text
 import logging
 import pymysql
+import urllib.parse
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -20,13 +21,16 @@ db_password = 'T3@m27!'
 db_host = '13.237.28.154'
 db_port = '3306'
 db_name = 'Mitigation'
-db_table = 'cve_data'
+db_table = 'entire_cve_list'
+
+db_password_encoded = urllib.parse.quote_plus(db_password)
 
 # Create a connection to the database
-engine = create_engine(f'mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}')
-
+engine = create_engine(f'mysql+pymysql://{db_user}:{db_password_encoded}@{db_host}:{db_port}/{db_name}')
 
 logging.info("Database connection established.")
+
+
 def fetch_cve_data(start_date, end_date):
     url = "https://services.nvd.nist.gov/rest/json/cves/2.0"
     headers = {
@@ -61,62 +65,71 @@ def set_base_severity(base_score, base_severity):
             base_severity = 'High'
         elif 9.0 <= base_score <= 10:
             base_severity = 'Critical'
-
     return base_severity
 
+
 def process_vulnerability(vulnerability):
-    cve_id = vulnerability['cve']['id']
-    published_date = vulnerability['cve']['published']
-    last_modified_date = vulnerability['cve']["lastModified"]
-    references = vulnerability['cve']['references']
-    reference_list = [f"{ref['url']} ({ref['source']})" for ref in references]
-    references_str = "; ".join(reference_list)
-    description = vulnerability['cve']['descriptions'][0]['value']
-    weaknesses = vulnerability['cve'].get('weaknesses', [])
-    configurations = vulnerability.get('configurations', [])
+    processed_data = {}
+    try:
+        processed_data['CVE_ID'] = vulnerability['cve']['id']
+        processed_data['Published_Date'] = vulnerability['cve']['published']
+        processed_data['Last_Modified_Date'] = vulnerability['cve']["lastModified"]
 
-    cvss_metrics = vulnerability['cve']['metrics'].get('cvssMetricV31', [None])[0] or \
-                   vulnerability['cve']['metrics'].get('cvssMetricV30', [None])[0] or \
-                   vulnerability['cve']['metrics'].get('cvssMetricV2', [None])[0]
-    cwe = 'N/A'
+        references = vulnerability['cve']['references']
+        reference_list = [f"{ref['url']} ({ref['source']})" for ref in references]
+        processed_data['References'] = "; ".join(reference_list)
 
-    for weakness in weaknesses:
-        weakness_descriptions = weakness.get('description', [])
-        for w_description in weakness_descriptions:
-            if w_description.get('lang') == 'en':
-                cwe = w_description.get('value', 'N/A')
-                break
+        processed_data['Description'] = vulnerability['cve']['descriptions'][0]['value']
 
-    affected_platform = []
-    for config in configurations:
-        nodes = config.get('nodes', [])
-        for node in nodes:
-            cpe_matches = node.get('cpeMatch', [])
-            for cpe in cpe_matches:
-                criteria = cpe.get('criteria', 'N/A')
-                if criteria != 'N/A':
-                    match = re.match(r'cpe:2\.3:[aho]:([^:]+):([^:]+):([^:]+)', criteria)
-                    if match:
-                        platform, product, version = match.groups()
-                        affected_platform.append(f"{platform}:{product}:{version}")
+        weaknesses = vulnerability['cve'].get('weaknesses', [])
+        configurations = vulnerability.get('configurations', [])
 
-    affected_platform_str = ', '.join(affected_platform) if affected_platform else 'N/A'
+        cvss_metrics = vulnerability['cve']['metrics'].get('cvssMetricV31', [None])[0] or \
+                       vulnerability['cve']['metrics'].get('cvssMetricV30', [None])[0] or \
+                       vulnerability['cve']['metrics'].get('cvssMetricV2', [None])[0]
 
-    if cvss_metrics:
-        cvss_data = cvss_metrics['cvssData']
-        version = cvss_data['version']
-        base_score = cvss_data.get('baseScore', 'N/A')
-        base_severity = cvss_metrics.get('baseSeverity', 'N/A')
-        assigner = cvss_metrics.get('source', 'N/A')
-    else:
-        version = 'N/A'
-        base_score = 0
-        base_severity = 'N/A'
-        assigner = 'N/A'
+        processed_data['CWE'] = 'N/A'
+        for weakness in weaknesses:
+            weakness_descriptions = weakness.get('description', [])
+            for w_description in weakness_descriptions:
+                if w_description.get('lang') == 'en':
+                    processed_data['CWE'] = w_description.get('value', 'N/A')
+                    break
 
-    base_severity = set_base_severity(base_score, base_severity)
+        affected_platform = []
+        for config in configurations:
+            nodes = config.get('nodes', [])
+            for node in nodes:
+                cpe_matches = node.get('cpeMatch', [])
+                for cpe in cpe_matches:
+                    criteria = cpe.get('criteria', 'N/A')
+                    if criteria != 'N/A':
+                        match = re.match(r'cpe:2\.3:[aho]:([^:]+):([^:]+):([^:]+)', criteria)
+                        if match:
+                            platform, product, version = match.groups()
+                            affected_platform.append(f"{platform}:{product}:{version}")
 
-    return [cve_id, description, published_date, last_modified_date, affected_platform_str, version, base_score, base_severity, references_str, cwe, assigner]
+        processed_data['Affected_Platform'] = ', '.join(affected_platform) if affected_platform else 'N/A'
+
+        if cvss_metrics:
+            cvss_data = cvss_metrics['cvssData']
+            processed_data['CVSS_Version'] = cvss_data['version']
+            processed_data['Base_Score'] = cvss_data.get('baseScore', 'N/A')
+            processed_data['Base_Severity'] = cvss_metrics.get('baseSeverity', 'N/A')
+            processed_data['assigner'] = cvss_metrics.get('source', 'N/A')
+        else:
+            processed_data['CVSS_Version'] = 'N/A'
+            processed_data['Base_Score'] = 0
+            processed_data['Base_Severity'] = 'N/A'
+            processed_data['assigner'] = 'N/A'
+
+        processed_data['Base_Severity'] = set_base_severity(processed_data['Base_Score'],
+                                                            processed_data['Base_Severity'])
+    except KeyError as e:
+        logging.error(f"KeyError: {e} - Data: {vulnerability}")
+
+    return processed_data
+
 
 def extract_cve_details(cve_items, seen_cve_ids):
     cve_list = []
@@ -124,13 +137,16 @@ def extract_cve_details(cve_items, seen_cve_ids):
         cve_id = item['cve']['id']
         if cve_id not in seen_cve_ids:
             seen_cve_ids.add(cve_id)
-            cve_list.append(process_vulnerability(item))
+            processed_data = process_vulnerability(item)
+            if processed_data:
+                cve_list.append(processed_data)
     return cve_list
+
 
 def read_latest_published_date():
     try:
         with engine.connect() as conn:
-            result = conn.execute(text(f"SELECT MAX(published_date) FROM {db_table}"))
+            result = conn.execute(text(f"SELECT MAX(Published_Date) FROM {db_table}"))
             latest_published_date = result.scalar()
             if latest_published_date:
                 return latest_published_date
@@ -138,33 +154,45 @@ def read_latest_published_date():
         logging.error(f"Error reading latest published date from database: {e}")
     return None
 
+
 def remove_duplicates(cve_list):
     seen = set()
     unique_list = []
     for cve in cve_list:
-        if cve[0] not in seen:
+        if cve['CVE_ID'] not in seen:
             unique_list.append(cve)
-            seen.add(cve[0])
+            seen.add(cve['CVE_ID'])
     return unique_list
+
 
 def insert_data_to_database(cve_list):
     try:
-        df = pd.DataFrame(cve_list, columns=[
-            'cve_id', 'description', 'published_date', 'last_modified_date', 'affected_platform', 'cvss_version', 'base_score', 'base_severity', 'references_list', 'cwe', 'assigner'])
-        df['published_date'] = pd.to_datetime(df['published_date'], errors='coerce')
-        df['last_modified_date'] = pd.to_datetime(df['last_modified_date'], errors='coerce')
+        # Create a DataFrame from the list of dictionaries
+        df = pd.DataFrame(cve_list)
+        logging.info(f"DataFrame columns: {df.columns.tolist()}")
+
+        # Ensure date columns are in datetime format if they exist
+        if 'Published_Date' in df.columns:
+            df['Published_Date'] = pd.to_datetime(df['Published_Date'], errors='coerce')
+        if 'Last_Modified_Date' in df.columns:
+            df['Last_Modified_Date'] = pd.to_datetime(df['Last_Modified_Date'], errors='coerce')
+
+        # Insert data into the database
         df.to_sql(db_table, con=engine, if_exists='append', index=False)
         logging.info("Data has been successfully inserted into the database.")
     except Exception as e:
         logging.error(f"An error occurred while inserting data into the database: {e}")
+
 
 def initial_fetch_and_save():
     latest_published_date = read_latest_published_date()
     if latest_published_date:
         logging.info(f"Latest published date in the existing database: {latest_published_date}")
         try:
+            latest_published_date = str(latest_published_date)
             latest_published_date = datetime.strptime(latest_published_date, '%Y-%m-%d %H:%M:%S.%f')
         except ValueError:
+            latest_published_date = str(latest_published_date)
             latest_published_date = datetime.strptime(latest_published_date, '%Y-%m-%d %H:%M:%S')
         start_date = latest_published_date.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'  # Format correctly for the API
     else:
@@ -201,6 +229,7 @@ def initial_fetch_and_save():
         else:
             logging.info("No new CVEs to save.")
 
+
 def main():
     try:
         logging.info("Updating CVE data...")
@@ -209,6 +238,7 @@ def main():
     except Exception as e:
         logging.error(f"An error occurred during the update process: {e}")
         traceback.print_exc()
+
 
 if __name__ == "__main__":
     main()
