@@ -68,7 +68,7 @@ Wazuh agent is detectable along with version number.
 
 
 ### windows_check.py:
-	-Codes here have been tested on windows 11
+ - Codes here have been tested on windows 11
 This script has functions to check various security aspects specific to Windows systems.
 Functions include checking the status of the firewall, antivirus, open ports, firewall logging, agent-based log collection, installed software, and system updates.
 It utilizes Windows-specific commands and tools (e.g., netsh, powershell) to gather this information.
