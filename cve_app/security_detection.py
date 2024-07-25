@@ -71,6 +71,5 @@ if __name__ == "__main__":
        #extract version numbers in description
     version_numbers = re.findall(r'\d+\.\d+', windows_number)
 
-    print(get_security_status())
 
 
