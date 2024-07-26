@@ -1,27 +1,3 @@
-# cve_project
-This web app renders cve entries from excel file directly into web app.
-
-the current excel file being displayed - extracted_cve_details.xlsx
-
-to run server
-use command - python3 manage.py runserver
-
-enter url - http://127.0.0.1:8000/
-
-to modify backend code - cve_app/views.py and cve_app/models.py
-
-to modify front end code - cve_app/templates/cve_app/list_cve.html
-
-to modify settings/url config - cve_project/url.py and settings.py
-
-
-INSTALLATION OF PRE-REQUISITES
-
-1. pip install -r requirements.txt
-
-
-
-reverse_excel_rows.py -> this script can be used to sort the CVEs in descending order (latest entries displayed first)
 
 # For checklist branch (this branch):
 
