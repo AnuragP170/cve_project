@@ -1,24 +1,23 @@
-# cve_project
-This web app renders cve entries from excel file directly into web app.
+The CVE Project
 
-the current excel file being displayed - all_cve_data.xlsx
+This web app renders cve entries from an SQL database directly into web app.
 
-to run server
+Features 
+1. List of all CVE entries to date (http://127.0.0.1:8000/cve-list/)
+  a. Search CVE entries by CVE-ID or any keyword
+  b. Option to filter ransomware related CVEs
+
+3. List of all ransomware related CVEs and their Recommended Mitigations (http://127.0.0.1:8000/ransomware/)
+   a. Option to update the list of ransomware related CVEs
+
+4. Update the local CVE database manually for latest CVE entries (http://127.0.0.1:8000/update)
+
+
+To Run web app, in terminal/CMD,
 use command - python3 manage.py runserver
-
-enter url - http://127.0.0.1:8000/cve-list/
-
-to modify backend code - cve_app/views.py and cve_app/models.py
-
-to modify front end code - cve_app/templates/cve_app/list_cve.html
-
-to modify settings/url config - cve_project/url.py and settings.py
 
 
 INSTALLATION OF PRE-REQUISITES
 
 1. pip install openpyxl django-import-export
-2. pip install django-redis
-3. enter command: redis-server 
-
-and other libraries in requirements.txt
+and other dependencies in requirements.txt
