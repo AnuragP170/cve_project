@@ -30,3 +30,4 @@ six~=1.16.0
 defusedxml~=0.7.1
 idna~=3.4
 psutil~=5.9.2
+SQLAlchemy~=2.0.20
