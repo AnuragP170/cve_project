@@ -108,7 +108,7 @@ def initial_fetch_and_save():
         start_date = latest_published_date.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'  # Format correctly for the API
     else:
         print("No existing CVE data found. Starting from scratch.")
-        start_date = '2000-01-01T00:00:00.000Z'  # Arbitrary start date for initial run
+        start_date = '1999-01-01T00:00:00.000Z'  # Arbitrary start date for initial run
 
     end_date_utc = datetime.utcnow().replace(tzinfo=pytz.UTC)
     end_date_singapore = end_date_utc.astimezone(pytz.timezone('Asia/Singapore'))
