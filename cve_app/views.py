@@ -1,5 +1,4 @@
 import warnings
-
 from django.shortcuts import render, redirect
 from django.core.cache import cache
 import openpyxl
@@ -17,8 +16,16 @@ from dateutil import parser
 import pytz
 import json
 import os
+
+# import local methods (helpers.py)
+from .helpers import fetch_cve_data, extract_cve_details, remove_duplicates
+from .helpers import get_next_entry_id, fetch_existing_cve_ids, read_latest_published_date
+from .helpers import get_latest_update_info
+
 API_KEY = '54ede83a-15f3-4b24-93b0-e6251f3bc2f2'
 UPDATE_LOG_FILE = 'update_log.json'
+
+
 def load_cve_data(request):
     query = request.GET.get('q')  # Get the search query from request
     filter_ransomware = 'filter_ransomware' in request.GET  # Check if the filter button is pressed
@@ -26,7 +33,7 @@ def load_cve_data(request):
     if not cve_entries:
         # Load data from database
         cve_entries = list(CVEEntry.objects.all().values())
-        cache.set('cve_entries', cve_entries, timeout=60*15)  # Cache for 15 minutes
+        cache.set('cve_entries', cve_entries, timeout=60 * 15)  # Cache for 15 minutes
 
     cve_entries.reverse()
     # Filter entries based on search query if it exists
@@ -54,153 +61,11 @@ def load_cve_data(request):
     page_obj = paginator.get_page(page_number)
     return render(request, 'cve_app/cve_list.html', {'page_obj': page_obj})
 
-def fetch_cve_data(start_date, end_date):
-    url = "https://services.nvd.nist.gov/rest/json/cves/2.0"
-    headers = {
-        'apiKey': API_KEY
-    }
-    params = {
-        'pubStartDate': start_date,
-        'pubEndDate': end_date
-    }
-    try:
-        response = requests.get(url, headers=headers, params=params)
-        response.raise_for_status()
-        data = response.json()
-        return data.get('vulnerabilities', [])
-    except requests.exceptions.HTTPError as http_err:
-        print(f"HTTP error occurred: {http_err}")
-    except requests.exceptions.RequestException as err:
-        print(f"Error occurred: {err}")
-    except ValueError as json_err:
-        print(f"JSON decode error occurred: {json_err}")
-    return []
-
-def setBaseSeverity(base_score, base_severity):
-    if base_score != 'N/A' and base_severity == 'N/A':
-        base_score = float(base_score)
-        if 0.1 <= base_score <= 3.9:
-            base_severity = 'Low'
-        elif 4.0 <= base_score <= 6.9:
-            base_severity = 'Medium'
-        elif 7.0 <= base_score <= 8.9:
-            base_severity = 'High'
-        elif 9.0 <= base_score <= 10:
-            base_severity = 'Critical'
-
-    return base_severity
-
-def process_vulnerability(vulnerability):
-    processed_data = {}
-    try:
-        processed_data['cve_id'] = vulnerability['cve']['id']
-        processed_data['published_date'] = vulnerability['cve']['published']
-        processed_data['last_modified_date'] = vulnerability['cve']["lastModified"]
-
-        references = vulnerability['cve']['references']
-        reference_list = [f"{ref['url']} ({ref['source']})" for ref in references]
-        processed_data['references'] = "; ".join(reference_list)
-
-        processed_data['description'] = vulnerability['cve']['descriptions'][0]['value']
-
-        weaknesses = vulnerability['cve'].get('weaknesses', [])
-        configurations = vulnerability.get('configurations', [])
-
-        cvss_metrics = vulnerability['cve']['metrics'].get('cvssMetricV31', [None])[0] or \
-                       vulnerability['cve']['metrics'].get('cvssMetricV30', [None])[0] or \
-                       vulnerability['cve']['metrics'].get('cvssMetricV2', [None])[0]
-
-        processed_data['cwe'] = 'N/A'
-        for weakness in weaknesses:
-            weakness_descriptions = weakness.get('description', [])
-            for w_description in weakness_descriptions:
-                if w_description.get('lang') == 'en':
-                    processed_data['cwe'] = w_description.get('value', 'N/A')
-                    break
-
-        affected_platform = []
-        for config in configurations:
-            nodes = config.get('nodes', [])
-            for node in nodes:
-                cpe_matches = node.get('cpeMatch', [])
-                for cpe in cpe_matches:
-                    criteria = cpe.get('criteria', 'N/A')
-                    if criteria != 'N/A':
-                        match = re.match(r'cpe:2\.3:[aho]:([^:]+):([^:]+):([^:]+)', criteria)
-                        if match:
-                            platform, product, version = match.groups()
-                            affected_platform.append(f"{platform}:{product}:{version}")
-
-        processed_data['affected_platform'] = ', '.join(affected_platform) if affected_platform else 'N/A'
-
-        if cvss_metrics:
-            cvss_data = cvss_metrics['cvssData']
-            processed_data['cvss_version'] = cvss_data['version']
-            processed_data['base_score'] = cvss_data.get('baseScore', 'N/A')
-            processed_data['base_severity'] = cvss_metrics.get('baseSeverity', 'N/A')
-            processed_data['assigner'] = cvss_metrics.get('source', 'N/A')
-        else:
-            processed_data['cvss_version'] = 'N/A'
-            processed_data['base_score'] = 0
-            processed_data['base_severity'] = 'N/A'
-            processed_data['assigner'] = 'N/A'
-
-        processed_data['base_severity'] = setBaseSeverity(processed_data['base_score'],
-                                                            processed_data['base_severity'])
-    except KeyError as e:
-        print(f"KeyError: {e} - Data: {vulnerability}")
-
-    return processed_data
-
-def extract_cve_details(cve_items, seen_cve_ids):
-    cve_list = []
-    for item in cve_items:
-        cve_id = item['cve']['id']
-        if cve_id not in seen_cve_ids:
-            seen_cve_ids.add(cve_id)
-            processed_data = process_vulnerability(item)
-            if processed_data:
-                cve_list.append(processed_data)
-    return cve_list
-
-def read_latest_published_date():
-    try:
-        latest_published_date = CVEEntry.objects.latest('published_date').published_date
-        return latest_published_date
-    except CVEEntry.DoesNotExist:
-        return None
-    except Exception as e:
-        print(f"Error reading latest published date from database: {e}")
-    return None
-
-def remove_duplicates(cve_list):
-    seen = set()
-    unique_list = []
-    for cve in cve_list:
-        if cve['cve_id'] not in seen:
-            unique_list.append(cve)
-            seen.add(cve['cve_id'])
-    return unique_list
-
-def get_next_entry_id():
-    try:
-        latest_entry = CVEEntry.objects.latest('entry_id')
-        return latest_entry.entry_id + 1
-    except CVEEntry.DoesNotExist:
-        return 1
-    except Exception as e:
-        print(f"Error getting the next entry ID: {e}")
-        return None
-
-
-def fetch_existing_cve_ids():
-    return set(CVEEntry.objects.values_list('cve_id', flat=True))
-
 
 def insert_data_to_database(cve_list):
     try:
-        existing_cve_ids = fetch_existing_cve_ids()
-        next_entry_id = get_next_entry_id()
+        existing_cve_ids = fetch_existing_cve_ids()  # Fetch existing CVE IDs from the database
+        next_entry_id = get_next_entry_id()  # Get the next entry ID for the new data
         if next_entry_id is None:
             print("Failed to get the next entry ID.")
             return
@@ -227,8 +92,9 @@ def insert_data_to_database(cve_list):
     except Exception as e:
         print(f"An error occurred while inserting data into the database: {e}")
 
+
 def initial_fetch_and_save():
-    latest_published_date = read_latest_published_date()
+    latest_published_date = read_latest_published_date()  # Read the latest published date from the database
     if latest_published_date:
         try:
             latest_published_date = str(latest_published_date)
@@ -258,15 +124,15 @@ def initial_fetch_and_save():
 
     try:
         while True:
-            cve_items = fetch_cve_data(start_date, end_date)
+            cve_items = fetch_cve_data(start_date, end_date, API_KEY)  # Fetch CVE data from the API
             if not cve_items:
                 break
-            cve_list = extract_cve_details(cve_items, seen_cve_ids)
+            cve_list = extract_cve_details(cve_items, seen_cve_ids)  # Extract relevant details from the fetched data
             all_cve_list.extend(cve_list)
             if not cve_list:
                 break  # Exit the loop if no CVE items were fetched
             print(f"Fetched {len(cve_items)} CVEs")
-            time.sleep(6)
+            time.sleep(6)  # Wait to avoid hitting the API rate limit
     except KeyboardInterrupt:
         print("Keyboard interrupt received. Saving collected data to database.")
         raise
@@ -275,16 +141,17 @@ def initial_fetch_and_save():
         raise
     finally:
         if all_cve_list:
-            unique_cve_list = remove_duplicates(all_cve_list)
-            insert_data_to_database(unique_cve_list)
+            unique_cve_list = remove_duplicates(all_cve_list)  # Remove duplicates from the fetched data
+            insert_data_to_database(unique_cve_list)  # Insert the data into the database
         else:
             print("No new CVEs to save.")
     return all_cve_list
 
+
 def update_cves(request):
     try:
-        new_entries = initial_fetch_and_save()
-        latest_date = read_latest_published_date()
+        new_entries = initial_fetch_and_save()  # Fetch new CVEs and save to the database
+        latest_date = read_latest_published_date()  # Read the latest published date from the database
         message = "Data updated!"
         latest_date_str = latest_date.strftime('%Y-%m-%d')
         new_cve_ids = [entry['cve_id'] for entry in new_entries] if new_entries else []
@@ -295,26 +162,23 @@ def update_cves(request):
         new_cve_ids = []
 
     return JsonResponse({"message": message, "latest_date": latest_date_str, "new_entries": new_cve_ids})
+
+
 def update_page(request):
-    latest_date = read_latest_published_date()
+    latest_date = read_latest_published_date()  # Read the latest published date from the database
     context = {'latest_date': latest_date.strftime('%Y-%m-%d') if latest_date else 'Unknown'}
-    return render(request, 'cve_app/update.html', context)
-
-
-def run_cisa_script(request):
-    subprocess.run(['python', 'CISA_ransomware.py'], check=True)
-    return redirect('cve_list')
+    return render(request, 'cve_app/update.html', context)  # Render the update page with the latest date
 
 
 def load_ransomware_data(request):
     query = request.GET.get('q')  # Get the search query from the request
-    ransomware_entries = cache.get('ransomware_entries')
+    ransomware_entries = cache.get('ransomware_entries')  # Try to fetch cached ransomware data
     if not ransomware_entries:
         # Load data from the database
         ransomware_entries = list(RansomwareCVEEntry.objects.all().values())
 
         # Cache the data for 15 minutes
-        cache.set('ransomware_entries', ransomware_entries, timeout=60*15)
+        cache.set('ransomware_entries', ransomware_entries, timeout=60 * 15)
 
     # Further filter entries based on the search query if it exists
     if query:
@@ -322,8 +186,8 @@ def load_ransomware_data(request):
         filtered_entries = []
         for entry in ransomware_entries:
             if all(
-                any(part in (str(value).lower() or '') for value in entry.values())
-                for part in query_parts
+                    any(part in (str(value).lower() or '') for value in entry.values())
+                    for part in query_parts
             ):
                 filtered_entries.append(entry)
         ransomware_entries = filtered_entries
@@ -332,14 +196,14 @@ def load_ransomware_data(request):
     paginator = Paginator(ransomware_entries, 50)  # Show 50 entries per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    return render(request, 'cve_app/ransomware.html', {'page_obj': page_obj})
-def get_latest_update_info():
-    if os.path.exists(UPDATE_LOG_FILE):
-        with open(UPDATE_LOG_FILE, 'r') as log_file:
-            update_info = json.load(log_file)
-        return update_info
-    else:
-        return {'latest_update': 'N/A', 'new_cves': []}
+    return render(request, 'cve_app/ransomware.html', {'page_obj': page_obj})  # Render the ransomware data page
+
+
+def run_cisa_script(request):
+    # Run the CISA ransomware script and redirect to the CVE list page
+    subprocess.run(['python', 'CISA_ransomware.py'], check=True)
+    return redirect('cve_list')
+
 
 def update_ransomware_cves_view(request):
     if request.method == 'POST':
@@ -350,9 +214,11 @@ def update_ransomware_cves_view(request):
             update_info = get_latest_update_info()
             return JsonResponse({'message': 'Ransomware CVEs updated successfully!', **update_info}, status=200)
         except subprocess.CalledProcessError as e:
-            return JsonResponse({'message': f'An error occurred: {e}', 'latest_update': 'N/A', 'new_cves': []}, status=500)
+            return JsonResponse({'message': f'An error occurred: {e}', 'latest_update': 'N/A', 'new_cves': []},
+                                status=500)
     return JsonResponse({'message': 'Invalid request method.'}, status=405)
 
+
 def update_ransomware_page(request):
-    update_info = get_latest_update_info()
-    return render(request, 'cve_app/update_ransomware_page.html', update_info)
+    update_info = get_latest_update_info()  # Get the latest update information
+    return render(request, 'cve_app/update_ransomware_page.html', update_info)  # Render the ransomware update page
