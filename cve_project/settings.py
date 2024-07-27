@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
+    'django.contrib.staticfiles',
     'django.contrib.sessions',
     'django.contrib.messages',
     'cve_app',
@@ -125,3 +126,9 @@ CACHES = {
         }
     }
 }
+
+STATIC_URL = '/static/'
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'cve_app/static'),
+]
