@@ -192,6 +192,7 @@ def load_ransomware_data(request):
                 filtered_entries.append(entry)
         ransomware_entries = filtered_entries
 
+    ransomware_entries.reverse()
     # Paginate the filtered entries
     paginator = Paginator(ransomware_entries, 50)  # Show 50 entries per page
     page_number = request.GET.get('page')
