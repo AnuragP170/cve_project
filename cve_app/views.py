@@ -18,7 +18,7 @@ import json
 import os
 
 # import local methods (helpers.py)
-from .helpers import fetch_cve_data, extract_cve_details, remove_duplicates
+from .helpers import fetch_cve_data, extract_cve_details, remove_duplicates, get_latest_update_date
 from .helpers import get_next_entry_id, fetch_existing_cve_ids, read_latest_published_date
 from .helpers import get_latest_update_info
 
@@ -221,5 +221,6 @@ def update_ransomware_cves_view(request):
 
 
 def update_ransomware_page(request):
-    update_info = get_latest_update_info()  # Get the latest update information
-    return render(request, 'cve_app/update_ransomware_page.html', update_info)  # Render the ransomware update page
+    latest_update = get_latest_update_date()  # Get the latest update information
+    context = {'latest_date': latest_update if latest_update else 'Unknown'}
+    return render(request, 'cve_app/update.html', context)  # Render the ransomware update page

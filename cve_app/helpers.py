@@ -171,3 +171,12 @@ def get_latest_update_info():
         return update_info
     else:
         return {'latest_update': 'N/A', 'new_cves': []}
+
+def get_latest_update_date():
+    # Get the latest update information from the update log file
+    if os.path.exists(UPDATE_LOG_FILE):
+        with open(UPDATE_LOG_FILE, 'r') as log_file:
+            update_info = json.load(log_file)
+        return update_info.get('latest_update', 'N/A')
+    else:
+        return 'N/A'
