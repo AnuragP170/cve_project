@@ -105,7 +105,7 @@ if __name__ == "__main__":
 
 def check_syslog():
     try:
-        result = subprocess.run(['systemctl', 'status', 'rsyslogd'], capture_output=True, text=True)
+        result = subprocess.run(['systemctl', 'status', 'syslogd'], capture_output=True, text=True)
         if result.returncode == 0 or result.returncode == 3:
             return ["Detected"]
     except Exception as e:

@@ -9,6 +9,7 @@ from cve_app.OS_checks.ubuntu_check import *
 
 
 def get_security_status():
+    firewall_logging = []
     if platform.system() == "Windows":
         firewall = check_windows_firewall()
         antivirus = check_windows_antivirus()
@@ -21,7 +22,14 @@ def get_security_status():
         installed_software_and_version = software_dict
         toc = time.perf_counter()
         print(f"Finished function in {toc - tic:0.4f} seconds")
-
+        results = {
+            "Firewall": firewall,
+            "Antivirus": antivirus,
+            "Firewall logging": firewall_logging,
+            "Open Ports": ports,
+            "Agent-based Log Collection": agent_logging,
+            "Installed Software": installed_software_and_version
+        }
     else:
         firewall = check_ubuntu_firewall()
         antivirus = check_ubuntu_antivirus()
@@ -32,18 +40,18 @@ def get_security_status():
         toc = time.perf_counter()
         installed_software_and_version = get_installed_programs_ubuntu()
         print(f"Finished function in {toc - tic:0.4f} seconds")
+        syslog = check_syslog()
 
-    syslog = check_syslog()
+        results = {
+            "Firewall": firewall,
+            "Antivirus": antivirus,
+            "Firewall logging": firewall_logging,
+            "Open Ports": ports,
+            "Syslog": syslog,
+            "Agent-based Log Collection": agent_logging,
+            "Installed Software": installed_software_and_version
+        }
 
-    results = {
-        "Firewall": firewall,
-        "Antivirus": antivirus,
-        "Firewall logging": firewall_logging,
-        "Open Ports": ports,
-        "Syslog": syslog,
-        "Agent-based Log Collection": agent_logging,
-        "Installed Software": installed_software_and_version
-    }
     filename = "security_check_results{OS}.txt".format(OS=platform.system())
     write_results_to_file(results, filename)
     return results
