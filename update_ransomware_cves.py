@@ -15,7 +15,7 @@ TEAM_ID = 'team-63uv'  # Your team ID
 
 UPDATE_LOG_FILE = 'update_log.json'
 
-# Function to fetch ransomware CVEs from Feedly using streams
+# Function to fetch ransomware CVEs from Feedly using streams.p
 def fetch_ransomware_cves_from_feedly(feedly_api_key, stream_id):
     headers = {
         'Authorization': f'OAuth {feedly_api_key}',

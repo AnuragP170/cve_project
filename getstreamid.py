@@ -1,5 +1,7 @@
 import requests
 
+# This program is used to find the team name (value of 'enterpriseName')
+
 # Replace with your developer token
 developer_token = 'fe_ynxrZ4Ojby6L8EYFwSQHrAPc0IZ5AMS5xI0bZJ4C'
 
