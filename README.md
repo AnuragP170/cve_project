@@ -1,4 +1,4 @@
-The CVE Project
+# The CVE Project
 
 This web app renders cve entries from an SQL database directly into web app.
 
@@ -18,14 +18,14 @@ To Run web app, in terminal/CMD
 use command - python3 manage.py runserver
 
 
-# INSTALLATION OF PRE-REQUISITES
+## INSTALLATION OF PRE-REQUISITES
 
 1. pip install openpyxl django-import-export
 
 and other dependencies in requirements.txt
 
 
-# Instructions to add Feedly API key
+## Instructions to add Feedly API key
 
 1. Go to Feedly website -> Create account (Select Threat Intelligence field)
 2. Go to https://feedly.com/i/team/api
