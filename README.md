@@ -1,6 +1,6 @@
 # The CVE Project
 
-This web app renders cve entries from an SQL database directly into web app.
+This DJANGO web app renders cve entries from an SQL database directly into web app.
 
 SQL database contains all CVE entries compiled from:  NVD, CVE Details, MITRE CVE, CIRCL + SENTNL
 
