@@ -10,8 +10,8 @@ import json
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-FEEDLY_API_KEY = 'fe_bu0u9LwuSm1y6ZzN3jnXDNI54N0WFATMBC8VYmAb'  # Replace with your Feedly API key
-TEAM_ID = 'team-qc5i'  # Your team ID
+FEEDLY_API_KEY = 'fe_ynxrZ4Ojby6L8EYFwSQHrAPc0IZ5AMS5xI0bZJ4C'  # Replace with your Feedly API key
+TEAM_ID = 'team-63uv'  # Your team ID
 
 UPDATE_LOG_FILE = 'update_log.json'
 

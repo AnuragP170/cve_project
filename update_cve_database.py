@@ -7,7 +7,6 @@ import re
 from sqlalchemy import create_engine
 from sqlalchemy import text
 import logging
-import pymysql
 import urllib.parse
 
 # Setup logging
