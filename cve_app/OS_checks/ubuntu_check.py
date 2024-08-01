@@ -65,13 +65,7 @@ def check_open_ports_ubuntu():
 
 def check_agent_based_log_collection_ubuntu():
     programs = [
-        "wazuh-agent", # the only one tested so far
-        "splunkd",
-        "qradar",
-        "arcsight",
-        "logrhythm",
-        "sumologic",
-        "securonix"
+        "wazuh-agent", # the only one tested so far, add as needed
     ]
     detected_programs = []
 
