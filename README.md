@@ -29,6 +29,8 @@ Codes for ubuntu and linux are done in a way that allows for easy additions to t
 
 Results are written to a .txt file in the format "security_check_results{OS}.txt"
 
+Program can be run without the GUI to get results as a dictionary. `Use get_security_status()`
+
 Refer to get_installed_software_powershell() and get_installed_programs_ubuntu() for how windows and ubuntu are checked respectively.
 
 Installed programs and their versions may be useful for correlating to the CVE database and finding vulnerable versions, but currently it is not achieved in this project
