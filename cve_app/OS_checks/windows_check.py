@@ -115,22 +115,6 @@ def get_windows_version():
     return f"{os}"
 
 
-def check_windows_updates():
-    try:
-        result = subprocess.run(
-            ['powershell', '-Command', 'Import-Module PSWindowsUpdate; Get-WindowsUpdate -ListOnly'],
-            capture_output=True, text=True)
-
-        if result.returncode == 0:
-            updates = result.stdout.strip()
-            return updates if updates else "No updates available"
-        else:
-            return "Error: Unable to check for updates"
-    except Exception as e:
-        print(f"Error checking Windows updates: {e}")
-        return "Not detected"
-
-
 def get_installed_software_powershell():
     try:
         result = subprocess.run(

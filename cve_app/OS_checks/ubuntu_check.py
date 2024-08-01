@@ -117,7 +117,7 @@ import subprocess
 
 
 def get_installed_programs_ubuntu():
-    #has limitations, for example, programs that were not installed manually.
+    #has limitations, for example, programs that were  installed manually.
     try:
         result = subprocess.run(['dpkg-query', '-W'], capture_output=True,
                                 text=True)

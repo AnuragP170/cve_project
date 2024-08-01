@@ -73,11 +73,6 @@ def write_results_to_file(results, filename="security_check_results.txt"):
 
 if __name__ == "__main__":
     # Sample code for testing, this part is for just getting values from the programs
-    os=platform.system()
-    windows_number=platform.version()
-
-       #extract version numbers in description
-    version_numbers = re.findall(r'\d+\.\d+', windows_number)
-
+    print(get_security_status())
 
 
