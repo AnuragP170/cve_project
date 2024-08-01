@@ -1,6 +1,9 @@
 
 # For checklist branch (this branch):
 
+ > [!TIP]
+> Requirements.txt was created using pip freeze for python 3.11, if there is an error, just run the program with python manage.py runserver and install packages as needed. e.g. if package is not found, pip install said package.
+
 
 ## Files relevant to checklist functionality
 cve_app/security_detection.py
