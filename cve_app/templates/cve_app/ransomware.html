@@ -62,7 +62,7 @@ table thead th {
    <script src="{% static 'js/bootstrap.min.js' %}"></script>
    <script src="{% static 'js/popper.min.js' %}"></script>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <a class="navbar-brand" href="../cve-list/">CVE List</a>
+        <a class="navbar-brand" href="/cve-list/">CVE List</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -105,9 +105,6 @@ table thead th {
                         <th>Description</th>
                         <th>Mitigation</th>
                         <th>Ransomware </th>
-                        <th>School </th>
-                        <th>CISA </th>
-                        <th>NVD </th>
                         <th>CVE References </th>
                         <th>Ransomware References</th>
                     </tr>
@@ -119,9 +116,6 @@ table thead th {
                         <td>{{ ransomware.description }}</td>
                         <td>{{ ransomware.mitigation }}</td>
                         <td>{{ ransomware.ransomware }}</td>
-                        <td>{{ ransomware.school }}</td>
-                        <td>{{ ransomware.CISA }}</td>
-                        <td>{{ ransomware.NVD }}</td>
                         <td>{{ ransomware.cve_references_url }}</td>
                         <td>{{ ransomware.rw_references_url }}</td>
                     </tr>

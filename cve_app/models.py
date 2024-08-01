@@ -26,9 +26,6 @@ class RansomwareCVEEntry(models.Model):
     description = models.TextField(blank=True)
     mitigation = models.TextField(blank=True)
     ransomware = models.CharField(max_length=500, blank=True)
-    school = models.CharField(max_length=500, blank=True)
-    CISA = models.CharField(max_length=500, blank=True)
-    NVD = models.CharField(max_length=500, blank=True)
     cve_references_url = models.TextField(blank=True)
     rw_references_url = models.TextField(blank=True)
 

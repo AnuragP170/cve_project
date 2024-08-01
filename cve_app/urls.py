@@ -24,5 +24,6 @@ urlpatterns = [
     path('ransomware/', load_ransomware_data, name='ransomware_cves'),
     path('update-ransomware-cves/', update_ransomware_cves_view, name='update_ransomware_cves'),
     path('update-ransomware/', update_ransomware_page, name='update_ransomware_page'),
+    path('new-cves/', load_cve_data, name='new_cves')
 ]
 

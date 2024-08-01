@@ -26,5 +26,6 @@ urlpatterns = [
     path('', lambda request: redirect('cve-list/', permanent=True)),
     path('run_cisa_script/', views.run_cisa_script, name='run_cisa_script'),
     path('ransomware/', views.load_ransomware_data, name='ransomware'),
-    path('update/', views.update_page, name='update_page')
+    path('update/', views.update_page, name='update_page'),
+    path('new-cves/', views.load_cve_data, name='new_cves')
 ]

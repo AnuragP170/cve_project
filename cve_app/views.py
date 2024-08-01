@@ -213,7 +213,7 @@ def update_ransomware_cves_view(request):
             subprocess.run(['python', 'update_ransomware_cves.py'], capture_output=True, text=True, check=True)
             # Get the latest update info
             update_info = get_latest_update_info()
-            return JsonResponse({'message': 'Ransomware CVEs updated successfully!', **update_info}, status=200)
+            return JsonResponse({'message': 'Added more CVEs to ransomware filter', **update_info}, status=200)
         except subprocess.CalledProcessError as e:
             return JsonResponse({'message': f'An error occurred: {e}', 'latest_update': 'N/A', 'new_cves': []},
                                 status=500)

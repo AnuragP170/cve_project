@@ -20,5 +20,6 @@ from cve_app import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('cve-list/', views.load_cve_data, name='cve_list')
+    path('cve-list/', views.load_cve_data, name='cve_list'),
+    path('new-cves/', views.load_cve_data, name='new_cves')
 ]
