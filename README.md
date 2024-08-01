@@ -30,6 +30,11 @@ and other dependencies in requirements.txt
 1. Go to Feedly website -> Create account (Select Threat Intelligence field)
 2. Go to https://feedly.com/i/team/api
 3. Create New API Token
-4. To retrieve team name -> Enter the token in getstreamid.py and run it
+4. To retrieve team name -> Enter the API token in getstreamid.py and run it
 5. the value of key 'enterpriseName' is the team name (eg  'entepriseName' : 'team-75ig')
 6. Add the newly generated API token and team name to the update_ransomware_cves.py
+
+Set System variables (Environment variables)
+FEEDLY_API_KEY "api key"
+TEAM_ID "team id"
+NVD_API_KEY "nvd api key"
