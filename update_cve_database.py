@@ -13,7 +13,7 @@ import os
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# NVD_API_KEY = '54ede83a-15f3-4b24-93b0-e6251f3bc2f2'
+# NVD_API_KEY = '54ede83a-***************************'
 
 NVD_API_KEY = os.getenv('NVD_API_KEY')
 
