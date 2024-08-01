@@ -22,8 +22,11 @@ from .helpers import fetch_cve_data, extract_cve_details, remove_duplicates, get
 from .helpers import get_next_entry_id, fetch_existing_cve_ids, read_latest_published_date
 from .helpers import get_latest_update_info
 
-API_KEY = '54ede83a-15f3-4b24-93b0-e6251f3bc2f2'
+API_KEY = os.getenv('NVD_API_KEY')
 UPDATE_LOG_FILE = 'update_log.json'
+
+if not API_KEY:
+    raise ValueError("Please set the NVD_API_KEY environment variables")
 
 
 def load_cve_data(request):

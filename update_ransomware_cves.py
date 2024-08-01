@@ -10,8 +10,13 @@ import json
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-FEEDLY_API_KEY = 'fe_ynxrZ4Ojby6L8EYFwSQHrAPc0IZ5AMS5xI0bZJ4C'  # Replace with your Feedly API key
-TEAM_ID = 'team-63uv'  # Your team ID
+# FEEDLY_API_KEY = 'fe_ynxrZ4Ojby6L8EYFwSQHrAPc0IZ5AMS5xI0bZJ4C'  # Replace with your Feedly API key
+# TEAM_ID = 'team-63uv'  # Your team ID
+FEEDLY_API_KEY = os.getenv('FEEDLY_API_KEY')
+TEAM_ID = os.getenv('TEAM_ID')
+
+if not FEEDLY_API_KEY or not TEAM_ID:
+    raise ValueError("Please set the FEEDLY_API_KEY and TEAM_ID environment variables")
 
 UPDATE_LOG_FILE = 'update_log.json'
 

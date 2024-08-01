@@ -8,11 +8,17 @@ from sqlalchemy import create_engine
 from sqlalchemy import text
 import logging
 import urllib.parse
+import os
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-API_KEY = '54ede83a-15f3-4b24-93b0-e6251f3bc2f2'
+# NVD_API_KEY = '54ede83a-15f3-4b24-93b0-e6251f3bc2f2'
+
+NVD_API_KEY = os.getenv('NVD_API_KEY')
+
+if not NVD_API_KEY:
+    raise ValueError("Please set the NVD_API_KEY environment variables")
 
 # Database configuration
 db_user = 'team27'
@@ -33,7 +39,7 @@ logging.info("Database connection established.")
 def fetch_cve_data(start_date, end_date):
     url = "https://services.nvd.nist.gov/rest/json/cves/2.0"
     headers = {
-        'apiKey': API_KEY
+        'apiKey': NVD_API_KEY
     }
     params = {
         'pubStartDate': start_date,
